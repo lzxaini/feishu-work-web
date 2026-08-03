@@ -1,0 +1,188 @@
+// 飞书报工系统数据库模型
+// 设计依据：docs/03-数据表设计.md
+// 说明：用户不建表，以 open_id 关联飞书通讯录，姓名做快照
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. 项目表
+model Project {
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(100)
+  code            String?   @db.VarChar(50)
+  description     String?   @db.VarChar(500)
+  status          Int       @default(1) // 1进行中 2暂停 3已归档
+  startDate       DateTime? @map("start_date") @db.Date
+  endDate         DateTime? @map("end_date") @db.Date
+  createdByOpenId String?   @map("created_by_open_id") @db.VarChar(64)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deleted         Int       @default(0) // 软删除
+
+  members ProjectMember[]
+  reports WorkReport[]
+
+  @@index([status, deleted])
+  @@map("project")
+}
+
+// 2. 项目成员/负责人表（指定用户的载体，role=1 负责人）
+model ProjectMember {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  openId    String   @map("open_id") @db.VarChar(64)
+  userName  String?  @map("user_name") @db.VarChar(100)
+  role      Int      @default(2) // 1负责人(可管理) 2普通成员
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, openId])
+  @@index([openId])
+  @@map("project_member")
+}
+
+// 3. 报工表（核心）
+model WorkReport {
+  id                 Int       @id @default(autoincrement())
+  reportNo           String?   @map("report_no") @db.VarChar(32)
+  projectId          Int       @map("project_id")
+  reportDate         DateTime  @map("report_date") @db.Date
+  isHoliday          Int       @default(0) @map("is_holiday") // 0工作日 1节假日
+  normalHours        Decimal   @default(0) @db.Decimal(4, 1) @map("normal_hours")
+  overtimeHours      Decimal   @default(0) @db.Decimal(4, 1) @map("overtime_hours")
+  totalHours         Decimal   @default(0) @db.Decimal(4, 1) @map("total_hours")
+  remark             String?   @db.VarChar(500)
+  needApproval       Int       @default(0) @map("need_approval") // 0免审批 1需审批
+  status             Int       @default(1) @map("status") // 1审批中 2已通过 3已驳回 4已撤销
+  approvalInstanceId String?   @map("approval_instance_id") @db.VarChar(128)
+  approverOpenId     String?   @map("approver_open_id") @db.VarChar(64)
+  rejectReason       String?   @map("reject_reason") @db.VarChar(500)
+  approvedAt         DateTime? @map("approved_at")
+  userOpenId         String    @map("user_open_id") @db.VarChar(64)
+  userName           String?   @map("user_name") @db.VarChar(100)
+  createdBy          String?   @map("created_by") @db.VarChar(64)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deleted            Int       @default(0)
+
+  project  Project              @relation(fields: [projectId], references: [id])
+  approval WorkReportApproval?
+
+  @@unique([userOpenId, projectId, reportDate]) // 同人同项目同日唯一
+  @@index([projectId])
+  @@index([userOpenId, reportDate])
+  @@index([status])
+  @@index([reportDate])
+  @@map("work_report")
+}
+
+// 4. 报工审批同步表
+model WorkReportApproval {
+  id                    Int      @id @default(autoincrement())
+  workReportId          Int      @unique @map("work_report_id")
+  approvalCode          String   @map("approval_code") @db.VarChar(64)
+  approvalInstanceId    String   @unique @map("approval_instance_id") @db.VarChar(128)
+  approvalStatus        Int      @default(0) @map("approval_status") // 0审批中 1通过 2驳回 3撤销
+  applicantOpenId       String?  @map("applicant_open_id") @db.VarChar(64)
+  currentApproverOpenId String?  @map("current_approver_open_id") @db.VarChar(64)
+  formSnapshot          Json?    @map("form_snapshot")
+  feishuRaw             Json?    @map("feishu_raw")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  workReport WorkReport @relation(fields: [workReportId], references: [id])
+
+  @@map("work_report_approval")
+}
+
+// 5. 日历/节假日配置表（只存例外）
+model CalendarRule {
+  id        Int      @id @default(autoincrement())
+  calDate   DateTime @unique @map("cal_date") @db.Date
+  dayType   Int      @map("day_type") // 0工作日 1法定节假日 2调休上班日
+  name      String?  @db.VarChar(50)
+  source    String   @default("manual") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("calendar_rule")
+}
+
+// 6. 飞书用户缓存表（通讯录缓存，不建用户表）
+model FeishuUserCache {
+  id             Int       @id @default(autoincrement())
+  openId         String    @unique @map("open_id") @db.VarChar(64)
+  unionId        String?   @map("union_id") @db.VarChar(64)
+  userId         String?   @map("user_id") @db.VarChar(64)
+  name           String    @db.VarChar(100)
+  mobile         String?   @db.VarChar(32)
+  email          String?   @db.VarChar(128)
+  departmentName String?   @map("department_name") @db.VarChar(128)
+  enabled        Int       @default(1)
+  lastSyncAt     DateTime? @map("last_sync_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@map("feishu_user_cache")
+}
+
+// 7. 全局管理员表
+model Admin {
+  id        Int      @id @default(autoincrement())
+  openId    String   @unique @map("open_id") @db.VarChar(64)
+  userName  String?  @map("user_name") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("admin")
+}
+
+// 8. 系统配置表
+model SystemConfig {
+  id          Int      @id @default(autoincrement())
+  configKey   String   @unique @map("config_key") @db.VarChar(64)
+  configValue String?  @map("config_value") @db.VarChar(500)
+  description String?  @db.VarChar(200)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_config")
+}
+
+// 9. 消息发送记录表
+model MessageLog {
+  id             Int      @id @default(autoincrement())
+  receiverOpenId String   @map("receiver_open_id") @db.VarChar(64)
+  msgType        String   @map("msg_type") @db.VarChar(20)
+  content        String?  @db.Text
+  workReportId   Int?     @map("work_report_id")
+  sendStatus     Int      @default(0) // 0待发送 1成功 2失败
+  error          String?  @db.VarChar(500)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([workReportId])
+  @@index([receiverOpenId])
+  @@map("message_log")
+}
+
+// 10. 操作日志表
+model AuditLog {
+  id             Int      @id @default(autoincrement())
+  operatorOpenId String   @map("operator_open_id") @db.VarChar(64)
+  operatorName   String?  @map("operator_name") @db.VarChar(100)
+  action         String   @db.VarChar(64)
+  targetType     String   @map("target_type") @db.VarChar(32)
+  targetId       Int?     @map("target_id")
+  detail         Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([targetType, targetId])
+  @@index([operatorOpenId])
+  @@map("audit_log")
+}
