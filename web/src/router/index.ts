@@ -21,6 +21,7 @@ const router = createRouter({
         { path: '', name: 'home', component: () => import('../views/HomeView.vue') },
         { path: 'projects', name: 'projects', component: () => import('../views/ProjectList.vue') },
         { path: 'projects/new', name: 'project-new', component: () => import('../views/ProjectForm.vue') },
+        { path: 'projects/:id', name: 'project-detail', component: () => import('../views/ProjectDetail.vue') },
         { path: 'projects/:id/edit', name: 'project-edit', component: () => import('../views/ProjectForm.vue') },
         { path: 'reports', name: 'reports', component: () => import('../views/ReportList.vue') },
         { path: 'reports/new', name: 'report-new', component: () => import('../views/ReportForm.vue') },

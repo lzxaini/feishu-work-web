@@ -8,49 +8,62 @@
  * 微信：lizx2066
 -->
 <template>
-  <div class="surface-card">
-    <h1 class="page-title">提交报工</h1>
-    <t-form :data="form" label-align="top" style="max-width: 560px">
-      <t-form-item label="项目" required-mark>
-        <t-select v-model="form.projectId" filterable placeholder="选择项目" style="width: 100%">
-          <t-option v-for="p in projects" :key="p.id" :value="p.id" :label="p.name" />
-        </t-select>
-      </t-form-item>
-      <t-form-item label="报工日期" required-mark>
-        <t-date-picker
-          v-model="form.reportDate"
-          format="YYYY-MM-DD"
-          :disabled-date="(d: Date) => d.getTime() > Date.now()"
-          placeholder="选择日期"
-          @change="checkHoliday"
-        />
-      </t-form-item>
-      <t-form-item label="普通时长">
-        <div class="inline-field">
-          <t-input-number v-model="form.normalHours" :min="0" :max="24" :step="0.5" />
-          <span class="tip">小时（工作日 ≤8h 免审批）</span>
+  <div class="report-form-page">
+    <div class="surface-card hero-card">
+      <div class="hero-left">
+        <t-button variant="text" theme="default" class="back-btn" @click="router.back()">← 返回报工管理</t-button>
+        <h1 class="page-title">提交报工</h1>
+        <p class="hero-sub">选择项目与日期，填写工时后提交；工作日且无加班时免审批直接生效。</p>
+      </div>
+      <div class="hero-badge is-create">报工模式</div>
+    </div>
+
+    <div class="surface-card form-card">
+      <t-form :data="form" label-align="top" class="form-grid">
+        <t-form-item label="项目" required-mark class="span-full">
+          <t-select v-model="form.projectId" filterable placeholder="选择项目" style="width: 100%">
+            <t-option v-for="p in projects" :key="p.id" :value="p.id" :label="p.name" />
+          </t-select>
+        </t-form-item>
+        <t-form-item label="报工日期" required-mark class="span-full">
+          <t-date-picker
+            v-model="form.reportDate"
+            format="YYYY-MM-DD"
+            :disabled-date="(d: Date) => d.getTime() > Date.now()"
+            placeholder="选择日期"
+            style="width: 100%"
+            @change="checkHoliday"
+          />
+        </t-form-item>
+
+        <t-form-item label="普通时长">
+          <t-input-number v-model="form.normalHours" :min="0" :max="24" :step="0.5" style="width: 100%" />
+        </t-form-item>
+        <t-form-item label="加班时长">
+          <t-input-number v-model="form.overtimeHours" :min="0" :max="24" :step="0.5" style="width: 100%" />
+        </t-form-item>
+        <div class="span-full field-tips">
+          <p>普通时长：工作日 ≤8h 免审批</p>
+          <p>加班时长：&gt;0 将走审批</p>
         </div>
-      </t-form-item>
-      <t-form-item label="加班时长">
-        <div class="inline-field">
-          <t-input-number v-model="form.overtimeHours" :min="0" :max="24" :step="0.5" />
-          <span class="tip">小时（&gt;0 将走审批）</span>
+
+        <t-form-item v-if="holiday !== null" label="提示" class="span-full">
+          <t-alert
+            :theme="holiday || form.overtimeHours > 0 ? 'warning' : 'success'"
+            :message="holiday ? '该日期为节假日，报工将全部走审批' : form.overtimeHours > 0 ? '已填写加班时长，报工将走审批' : '工作日且无加班，报工免审批直接生效'"
+          />
+        </t-form-item>
+
+        <t-form-item label="备注" class="span-full">
+          <t-textarea v-model="form.remark" :maxlength="500" placeholder="备注（可选）" />
+        </t-form-item>
+
+        <div class="form-actions span-full">
+          <t-button theme="primary" shape="round" size="large" :loading="saving" @click="save">提交报工</t-button>
+          <t-button theme="default" variant="outline" size="large" @click="router.back()">取消并返回</t-button>
         </div>
-      </t-form-item>
-      <t-form-item v-if="holiday !== null" label="提示">
-        <t-alert
-          :theme="holiday || form.overtimeHours > 0 ? 'warning' : 'success'"
-          :message="holiday ? '该日期为节假日，报工将全部走审批' : form.overtimeHours > 0 ? '已填写加班时长，报工将走审批' : '工作日且无加班，报工免审批直接生效'"
-        />
-      </t-form-item>
-      <t-form-item label="备注">
-        <t-textarea v-model="form.remark" :maxlength="500" placeholder="备注（可选）" />
-      </t-form-item>
-      <t-form-item>
-        <t-button theme="primary" shape="round" :loading="saving" @click="save">提交</t-button>
-        <t-button theme="default" variant="outline" style="margin-left: 12px" @click="$router.back()">返回</t-button>
-      </t-form-item>
-    </t-form>
+      </t-form>
+    </div>
   </div>
 </template>
 
@@ -94,9 +107,106 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.inline-field {
+.report-form-page {
+  max-width: 980px;
+  margin: 0 auto;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hero-card {
+  background: linear-gradient(145deg, #ffffff 0%, #eefbf3 100%);
+  border-color: #d3eee0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.back-btn {
+  margin-left: -8px;
+  margin-bottom: 4px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.hero-sub {
+  margin: 8px 0 0;
+  color: #6e6e73;
+  font-size: 14px;
+}
+
+.hero-badge {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.hero-badge.is-create {
+  background: #e8f5ee;
+  color: #0a7a49;
+}
+
+.form-card {
+  padding-top: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0 16px;
+}
+
+.form-grid :deep(.span-full) {
+  grid-column: span 3;
+}
+
+.field-tips {
+  padding-left: 4px;
+  margin-bottom: 6px;
+  color: #86868b;
+  font-size: 12px;
+}
+
+.field-tips p {
+  margin: 2px 0;
+}
+
+.form-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .hero-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .page-title {
+    font-size: 22px;
+  }
+  .hero-badge {
+    align-self: flex-start;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-grid :deep(.span-full) {
+    grid-column: span 1;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
 }
 </style>

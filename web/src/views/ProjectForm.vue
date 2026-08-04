@@ -8,14 +8,24 @@
  * 微信：lizx2066
 -->
 <template>
-  <div class="surface-card project-form">
-    <div class="page-nav">
-      <t-button variant="text" theme="default" class="back-btn" @click="router.back()">← 返回</t-button>
-      <h1 class="page-title">{{ editId ? '编辑项目' : '新建项目' }}</h1>
+  <div class="project-form-page">
+    <div class="surface-card hero-card">
+      <div class="hero-left">
+        <t-button variant="text" theme="default" class="back-btn" @click="router.back()">← 返回项目管理</t-button>
+        <h1 class="page-title">{{ editId ? '编辑项目' : '新建项目' }}</h1>
+        <p class="hero-sub">
+          {{ editId ? '更新项目计划、成本和负责人信息，变更会立即生效。' : '填写项目基础信息后创建，后续可在项目管理中持续维护。' }}
+        </p>
+      </div>
+      <div class="hero-badge" :class="editId ? 'is-edit' : 'is-create'">
+        {{ editId ? '编辑模式' : '创建模式' }}
+      </div>
     </div>
 
-    <t-form :data="form" label-align="top" class="form-grid">
-      <t-form-item label="项目名称" required-mark class="span-2">
+    <div class="surface-card form-card">
+      <t-form :data="form" label-align="top" class="form-grid">
+        <div class="form-section span-full">基础信息</div>
+        <t-form-item label="项目名称" required-mark class="span-full">
         <t-input v-model="form.name" placeholder="请输入项目名称" />
       </t-form-item>
       <t-form-item label="项目编号">
@@ -28,9 +38,11 @@
       <t-form-item label="日期">
         <t-date-picker v-model="form.contractDate" format="YYYY-MM-DD" clearable style="width: 100%" placeholder="合同/立项日期" />
       </t-form-item>
-      <t-form-item label="起止日期" class="span-2">
+      <t-form-item label="起止日期" class="span-full">
         <t-date-picker v-model="dateRange" type="range" format="YYYY-MM-DD" clearable style="width: 100%" />
       </t-form-item>
+
+      <div class="form-section span-full">流程与优先级</div>
 
       <t-form-item label="优先级">
         <t-select v-model="form.priority" :options="priorityOptions" style="width: 100%" />
@@ -45,6 +57,8 @@
         </t-radio-group>
       </t-form-item>
 
+      <div class="form-section span-full">成本与文档</div>
+
       <t-form-item label="合同金额">
         <t-input-number v-model="form.contractAmount" style="width: 100%" theme="normal" placeholder="可选" :min="0" />
       </t-form-item>
@@ -55,7 +69,7 @@
         <t-input v-model="form.rdProjectDoc" placeholder="可选" />
       </t-form-item>
 
-      <t-form-item label="负责人" class="span-2">
+      <t-form-item label="负责人" class="span-full">
         <t-select
           v-model="form.ownerOpenIds"
           multiple
@@ -68,18 +82,21 @@
         />
       </t-form-item>
 
-      <t-form-item label="项目描述" class="span-2">
+      <div class="form-section span-full">补充说明</div>
+
+      <t-form-item label="项目描述" class="span-full">
         <t-textarea v-model="form.description" :maxlength="500" placeholder="项目描述（可选）" />
       </t-form-item>
-      <t-form-item label="备注" class="span-2">
+      <t-form-item label="备注" class="span-full">
         <t-textarea v-model="form.remark" :maxlength="500" placeholder="备注（可选）" />
       </t-form-item>
 
-      <t-form-item class="span-2">
-        <t-button theme="primary" shape="round" :loading="saving" @click="save">保存</t-button>
-        <t-button theme="default" variant="outline" style="margin-left: 12px" @click="router.back()">返回</t-button>
-      </t-form-item>
+      <div class="form-actions span-full">
+        <t-button theme="primary" shape="round" size="large" :loading="saving" @click="save">保存项目</t-button>
+        <t-button theme="default" variant="outline" size="large" @click="router.back()">取消并返回</t-button>
+      </div>
     </t-form>
+    </div>
   </div>
 </template>
 
@@ -201,41 +218,109 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.project-form {
-  max-width: 780px;
+.project-form-page {
+  max-width: 980px;
   margin: 0 auto;
-}
-.page-nav {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 14px;
 }
+
+.hero-card {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+  border-color: #d9e6f7;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .back-btn {
   margin-left: -8px;
+  margin-bottom: 4px;
 }
+
 .page-title {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: #1d1d1f;
   margin: 0;
 }
+
+.hero-sub {
+  margin: 8px 0 0;
+  color: #6e6e73;
+  font-size: 14px;
+}
+
+.hero-badge {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.hero-badge.is-create {
+  background: #e8f0fe;
+  color: #0066cc;
+}
+
+.hero-badge.is-edit {
+  background: #fff4e5;
+  color: #ad5a14;
+}
+
+.form-card {
+  padding-top: 20px;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0 16px;
 }
-.form-grid :deep(.span-2) {
+
+.form-grid :deep(.span-full) {
   grid-column: span 3;
 }
 
+.form-section {
+  margin-top: 2px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6e6e73;
+  letter-spacing: 0.02em;
+}
+
+.form-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 12px;
+}
+
 @media (max-width: 720px) {
+  .hero-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .page-title {
+    font-size: 22px;
+  }
+  .hero-badge {
+    align-self: flex-start;
+  }
   .form-grid {
     grid-template-columns: 1fr;
   }
-  .form-grid :deep(.span-2) {
+  .form-grid :deep(.span-full) {
     grid-column: span 1;
+  }
+  .form-actions {
+    flex-direction: column;
   }
 }
 </style>

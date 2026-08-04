@@ -9,29 +9,69 @@
 -->
 <template>
   <div class="project-list">
-    <div class="page-nav">
-      <t-button variant="text" theme="default" class="back-btn" @click="router.push('/')">
-        ← 返回首页
-      </t-button>
-      <h1 class="page-title">项目管理</h1>
+    <div class="surface-card overview-card">
+      <div class="overview-top">
+        <div>
+          <p class="overview-kicker">PROJECT DASHBOARD</p>
+          <h1 class="page-title">项目管理</h1>
+          <p class="overview-sub">集中管理研发项目的计划、成本、负责人和执行状态</p>
+        </div>
+        <div class="overview-actions">
+          <t-button variant="text" theme="default" class="back-btn" @click="router.push('/')">← 返回首页</t-button>
+          <t-button v-if="auth.isAdmin" theme="primary" shape="round" @click="router.push('/projects/new')">新建项目</t-button>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <div class="metric-label">项目总数</div>
+          <div class="metric-value">{{ total }}</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">进行中</div>
+          <div class="metric-value">{{ activeCount }}</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">已完成</div>
+          <div class="metric-value">{{ completedCount }}</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">紧急优先级</div>
+          <div class="metric-value">{{ urgentCount }}</div>
+        </div>
+      </div>
     </div>
 
-    <div class="toolbar">
-      <t-input v-model="keyword" placeholder="搜索项目名称/编号" clearable style="width: 220px" @enter="load" />
-      <t-select v-model="status" placeholder="状态" clearable style="width: 130px" @change="load">
-        <t-option v-for="o in statusOptions" :key="o.value" :value="o.value" :label="o.label" />
-      </t-select>
-      <t-select v-model="priority" placeholder="优先级" clearable style="width: 130px" @change="load">
-        <t-option v-for="o in priorityOptions" :key="o.value" :value="o.value" :label="o.label" />
-      </t-select>
-      <t-button theme="default" @click="load">查询</t-button>
-      <t-button v-if="auth.isAdmin" theme="primary" shape="round" @click="router.push('/projects/new')">新建项目</t-button>
+    <div class="surface-card filter-card">
+      <div class="toolbar">
+        <t-input v-model="keyword" placeholder="搜索项目名称/合同编号" clearable style="width: 260px" @enter="load" />
+        <t-select v-model="status" placeholder="状态" clearable style="width: 140px" @change="load">
+          <t-option v-for="o in statusOptions" :key="o.value" :value="o.value" :label="o.label" />
+        </t-select>
+        <t-select v-model="priority" placeholder="优先级" clearable style="width: 140px" @change="load">
+          <t-option v-for="o in priorityOptions" :key="o.value" :value="o.value" :label="o.label" />
+        </t-select>
+        <t-button theme="primary" @click="load">查询</t-button>
+        <t-button theme="default" variant="outline" @click="resetFilters">重置</t-button>
+      </div>
+
+      <div class="quick-filters">
+        <span class="quick-label">快捷筛选</span>
+        <t-button size="small" variant="outline" :theme="status === 1 ? 'primary' : 'default'" @click="setStatusFilter(1)">进行中</t-button>
+        <t-button size="small" variant="outline" :theme="status === 2 ? 'primary' : 'default'" @click="setStatusFilter(2)">已完成</t-button>
+        <t-button size="small" variant="outline" :theme="status === 3 ? 'primary' : 'default'" @click="setStatusFilter(3)">已取消</t-button>
+        <t-button size="small" variant="outline" :theme="priority === 1 ? 'primary' : 'default'" @click="setPriorityFilter(1)">紧急</t-button>
+        <t-button size="small" variant="outline" :theme="priority === 2 ? 'primary' : 'default'" @click="setPriorityFilter(2)">优先</t-button>
+        <t-button size="small" variant="outline" :theme="priority === 3 ? 'primary' : 'default'" @click="setPriorityFilter(3)">普通</t-button>
+      </div>
     </div>
 
     <div class="surface-card table-card desktop-only">
-      <div class="table-scroll">
-        <t-table :data="rows" :columns="columns" :loading="loading" row-key="id" hover table-layout="fixed" />
+      <div class="table-head">
+        <div class="table-title">项目列表</div>
+        <div class="table-tip">共 {{ total }} 项，当前第 {{ page }} 页</div>
       </div>
+      <t-table :data="rows" :columns="columns" :loading="loading" row-key="id" hover table-layout="fixed" />
     </div>
 
     <!-- 移动端卡片列表 -->
@@ -42,8 +82,8 @@
         class="project-card surface-card"
         role="button"
         tabindex="0"
-        @click="router.push({ name: 'project-edit', params: { id: row.id } })"
-        @keyup.enter="router.push({ name: 'project-edit', params: { id: row.id } })"
+        @click="router.push({ name: 'project-detail', params: { id: row.id } })"
+        @keyup.enter="router.push({ name: 'project-detail', params: { id: row.id } })"
       >
         <div class="card-head">
           <span class="card-name">{{ row.name }}</span>
@@ -51,7 +91,7 @@
         </div>
         <div class="card-meta">
           <t-tag :theme="priorityTheme(row.priority)" size="small" variant="light">{{ priorityText(row.priority) }}</t-tag>
-          <span class="card-date">📅 {{ dateText(row.contractDate) }}</span>
+          <span class="card-date">日期 {{ dateText(row.contractDate) }}</span>
         </div>
         <div class="card-info">
           <div class="info-row"><span class="info-label">合同编号</span><span class="info-value">{{ row.contractNo || '-' }}</span></div>
@@ -60,6 +100,7 @@
           <div v-if="row.remark" class="info-row"><span class="info-label">备注</span><span class="info-value">{{ row.remark }}</span></div>
         </div>
         <div class="card-actions" @click.stop>
+          <t-button theme="default" variant="text" size="small" @click="router.push({ name: 'project-detail', params: { id: row.id } })">详情</t-button>
           <t-button theme="primary" variant="text" size="small" @click="router.push({ name: 'project-edit', params: { id: row.id } })">编辑</t-button>
           <t-button v-if="auth.isAdmin" theme="danger" variant="text" size="small" @click="remove(row)">删除</t-button>
         </div>
@@ -74,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-import { h, onMounted, ref } from 'vue';
+import { computed, h, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Button, Tag, MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import { getProjects, deleteProject } from '../api/project';
@@ -102,6 +143,10 @@ const priorityOptions = [
   { value: 2, label: '优先' },
   { value: 3, label: '普通' },
 ];
+
+const activeCount = computed(() => rows.value.filter((i) => i.status === 1).length);
+const completedCount = computed(() => rows.value.filter((i) => i.status === 2).length);
+const urgentCount = computed(() => rows.value.filter((i) => i.priority === 1).length);
 
 function statusText(s: number) {
   return ({ 1: '进行中', 2: '已完成', 3: '已取消' } as Record<number, string>)[s] || String(s);
@@ -135,21 +180,26 @@ const columns = [
     cell: (h: any, { rowIndex }: any) => (page.value - 1) * pageSize + rowIndex + 1,
   },
   { colKey: 'contractDate', title: '日期', width: 110, cell: (h: any, { row }: any) => dateText(row?.contractDate) },
-  { colKey: 'name', title: '项目名称', width: 160, ellipsis: true },
-  { colKey: 'contractNo', title: '合同编号', width: 130, cell: (h: any, { row }: any) => row?.contractNo || '-' },
-  { colKey: 'rdProjectDoc', title: '研发项目书', width: 150, ellipsis: true, cell: (h: any, { row }: any) => row?.rdProjectDoc || '-' },
-  { colKey: 'description', title: '项目描述', width: 160, ellipsis: true },
-  { colKey: 'contractAmount', title: '合同金额', width: 120, cell: (h: any, { row }: any) => moneyText(row?.contractAmount) },
-  { colKey: 'endDate', title: '项目结束日期', width: 130, cell: (h: any, { row }: any) => dateText(row?.endDate) },
-  { colKey: 'remark', title: '备注', width: 140, ellipsis: true, cell: (h: any, { row }: any) => row?.remark || '-' },
   {
-    colKey: 'patentApplied',
-    title: '申请专利',
-    width: 90,
+    colKey: 'name',
+    title: '项目名称',
+    width: 180,
+    ellipsis: true,
     cell: (h: any, { row }: any) =>
-      h(Tag, { theme: row?.patentApplied ? 'success' : 'default', size: 'small', variant: 'light' }, { default: () => (row?.patentApplied ? '是' : '否') }),
+      h(
+        'a',
+        {
+          class: 'name-link',
+          onClick: (e: any) => {
+            e.stopPropagation();
+            router.push({ name: 'project-detail', params: { id: row?.id } });
+          },
+        },
+        { default: () => row?.name || '-' },
+      ),
   },
-  { colKey: 'rdCostAmortization', title: '研发费用摊销', width: 130, cell: (h: any, { row }: any) => moneyText(row?.rdCostAmortization) },
+  { colKey: 'contractNo', title: '合同编号', width: 130, cell: (h: any, { row }: any) => row?.contractNo || '-' },
+  { colKey: 'contractAmount', title: '合同金额', width: 120, cell: (h: any, { row }: any) => moneyText(row?.contractAmount) },
   {
     colKey: 'members',
     title: '负责人',
@@ -198,6 +248,26 @@ function onPageChange(pageInfo: any) {
   load();
 }
 
+function resetFilters() {
+  keyword.value = '';
+  status.value = undefined;
+  priority.value = undefined;
+  page.value = 1;
+  load();
+}
+
+function setStatusFilter(v: number) {
+  status.value = status.value === v ? undefined : v;
+  page.value = 1;
+  load();
+}
+
+function setPriorityFilter(v: number) {
+  priority.value = priority.value === v ? undefined : v;
+  page.value = 1;
+  load();
+}
+
 function remove(row: any) {
   const dialog = DialogPlugin.confirm({
     header: '删除确认',
@@ -219,38 +289,145 @@ onMounted(load);
 .project-list {
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.page-nav {
+
+.overview-card {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+  border-color: #d9e6f7;
+  overflow: hidden;
+}
+
+.overview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.overview-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #6e6e73;
+}
+
+.overview-sub {
+  margin: 6px 0 0;
+  color: #6e6e73;
+  font-size: 14px;
+}
+
+.overview-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: 8px;
 }
+
 .back-btn {
   margin-left: -8px;
 }
+
 .page-title {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: #1d1d1f;
   margin: 0;
 }
+
+.metrics-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metric-item {
+  background: #ffffff;
+  border: 1px solid #e7edf6;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #6e6e73;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1d1d1f;
+}
+
+.filter-card {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
 .toolbar {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
+
+.quick-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.quick-label {
+  color: #6e6e73;
+  font-size: 13px;
+}
+
 .table-card {
-  padding: 8px 12px 16px;
+  padding: 12px;
 }
-.table-scroll {
+
+.table-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.table-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.table-tip {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.table-card :deep(.t-table) {
+  min-width: 1000px;
+}
+.table-card :deep(.t-table__content) {
   overflow-x: auto;
 }
-.table-scroll :deep(.t-table) {
-  min-width: 1500px;
+
+.name-link {
+  color: #0066cc;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
 }
+.name-link:hover {
+  text-decoration: underline;
+}
+
 .pager {
   margin-top: 16px;
   display: flex;
@@ -261,16 +438,21 @@ onMounted(load);
 .mobile-cards {
   display: none;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .project-card {
-  padding: 16px;
+  padding: 14px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  border-color: #e7edf6;
 }
 .project-card:active {
   transform: scale(0.99);
+}
+.project-card:hover {
+  border-color: #bfd5f1;
+  box-shadow: 0 8px 18px rgba(11, 53, 102, 0.08);
 }
 .card-head {
   display: flex;
@@ -292,18 +474,18 @@ onMounted(load);
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .card-date {
   font-size: 13px;
   color: #86868b;
 }
 .card-info {
-  border-top: 1px solid var(--td-component-border);
+  border-top: 1px solid #edf1f7;
   padding-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .info-row {
   display: flex;
@@ -314,13 +496,14 @@ onMounted(load);
 }
 .info-label {
   flex-shrink: 0;
-  width: 64px;
+  width: 68px;
   color: #86868b;
 }
 .info-value {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: calc(100% - 72px);
 }
 .card-actions {
   display: flex;
@@ -330,11 +513,25 @@ onMounted(load);
 }
 
 @media (max-width: 720px) {
+  .overview-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .overview-actions {
+    justify-content: space-between;
+  }
   .page-title {
-    font-size: 18px;
+    font-size: 22px;
+  }
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .toolbar > * {
-    flex: 1 1 auto;
+    flex: 1 1 40%;
+  }
+  .quick-label {
+    width: 100%;
+    margin-bottom: 2px;
   }
   .desktop-only {
     display: none;

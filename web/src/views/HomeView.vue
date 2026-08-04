@@ -18,6 +18,15 @@
       <p class="home-sub">选择功能，开始今天的报工工作</p>
     </div>
 
+    <div class="quick-report" role="button" tabindex="0" @click="go('/reports/new')" @keyup.enter="go('/reports/new')">
+      <div class="quick-report-icon">📝</div>
+      <div class="quick-report-text">
+        <div class="quick-report-title">一键报工</div>
+        <div class="quick-report-desc">选择项目、填写工时，快速提交今天的报工</div>
+      </div>
+      <div class="quick-report-arrow">→</div>
+    </div>
+
     <div class="home-grid">
       <div
         v-for="item in menus"
@@ -79,6 +88,69 @@ const menus = computed(() => {
   color: #6e6e73;
   font-size: 16px;
   margin: 0;
+}
+
+/* 一键报工横幅 */
+.quick-report {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #0066cc 0%, #0071e3 100%);
+  border-radius: 18px;
+  padding: 18px 22px;
+  margin-bottom: 22px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 8px 24px rgba(0, 102, 204, 0.22);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.quick-report:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 102, 204, 0.28);
+}
+.quick-report:active {
+  transform: translateY(0);
+}
+.quick-report-icon {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+.quick-report-text {
+  flex: 1;
+  min-width: 0;
+}
+.quick-report-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+.quick-report-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.quick-report-arrow {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
 }
 
 /* 功能卡片 grid：自适应列数 */
@@ -158,6 +230,29 @@ const menus = computed(() => {
   }
   .home-sub {
     font-size: 14px;
+  }
+  .quick-report {
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+  .quick-report-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    border-radius: 12px;
+  }
+  .quick-report-title {
+    font-size: 17px;
+  }
+  .quick-report-desc {
+    font-size: 12px;
+    white-space: normal;
+  }
+  .quick-report-arrow {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
   }
   .home-grid {
     grid-template-columns: repeat(2, 1fr);
