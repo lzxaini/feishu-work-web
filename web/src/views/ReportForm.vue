@@ -39,7 +39,6 @@
         <t-form-item label="普通时长">
           <t-input-number
             v-model="form.normalHours"
-            :disabled="quota.used > 0"
             :min="0"
             :max="quota.used > 0 ? quota.remaining : quota.limit"
             :step="0.5"
@@ -50,8 +49,8 @@
           <t-input-number v-model="form.overtimeHours" :min="0" :max="24" :step="0.5" style="width: 100%" />
         </t-form-item>
         <div class="span-full field-tips">
-          <p v-if="quota.used === 0">普通时长：今日暂无报工，可手动填写（上限 {{ quota.limit }}h）</p>
-          <p v-else-if="quota.remaining > 0">普通时长：今日已报 {{ quota.used }}h，剩余可报 {{ quota.remaining }}h（由系统自动计算，不可修改）</p>
+          <p v-if="quota.used === 0">普通时长：今日暂无报工，最多可报 {{ quota.limit }}h</p>
+          <p v-else-if="quota.remaining > 0">普通时长：今日已报 {{ quota.used }}h，最多还可报 {{ quota.remaining }}h</p>
           <p v-else>普通时长：今日已报满 {{ quota.limit }}h，普通时长不可再报；如需继续请填写加班时长</p>
           <p>加班时长：&gt;0 将走审批</p>
         </div>
@@ -97,7 +96,7 @@ async function loadQuota() {
   }
   const res = await getReportQuota(form.value.reportDate);
   quota.value = res;
-  // 无报工：允许手动输入（默认 0）；已有报工：自动取剩余额度并锁定
+  // 普通时长始终可编辑：无报工默认 0（最大为上限），有报工默认剩余额度（最大为剩余额度）
   form.value.normalHours = res.used > 0 ? res.remaining : 0;
 }
 
