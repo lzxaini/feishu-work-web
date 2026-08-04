@@ -61,7 +61,8 @@ const menus = computed(() => {
   const all = [
     { path: '/projects', icon: '📁', title: '项目管理', desc: '创建和维护项目信息', bg: 'linear-gradient(135deg, #e8f0fe, #d6e6fb)' },
     { path: '/reports', icon: '📝', title: '报工管理', desc: '提交工时，跟踪审批状态', bg: 'linear-gradient(135deg, #eef6ec, #dcefe0)' },
-    { path: '/calendar', icon: '📅', title: '日历配置', desc: '维护节假日与调休规则', bg: 'linear-gradient(135deg, #fff4e5, #ffe8cc)', adminOnly: true },
+    { path: '/approvals', icon: '✅', title: '审批管理', desc: '审批名下项目的报工', bg: 'linear-gradient(135deg, #fff4e5, #ffe8cc)' },
+    { path: '/calendar', icon: '📅', title: '日历配置', desc: '维护节假日与调休规则', bg: 'linear-gradient(135deg, #f6f4ff, #e9e4fb)', adminOnly: true },
     { path: '/settings', icon: '⚙️', title: '系统设置', desc: '管理员与通讯录管理', bg: 'linear-gradient(135deg, #f2f2f5, #e8e8ed)', adminOnly: true },
   ];
   return auth.isAdmin ? all : all.filter((m) => !m.adminOnly);

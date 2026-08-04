@@ -8,11 +8,13 @@
  * 微信：lizx2066
  */
 import { Module } from '@nestjs/common';
-import { ApprovalController } from './approval.controller';
+import { ApprovalController, ApprovalInternalController, ApprovalManageController } from './approval.controller';
 import { ApprovalService } from './approval.service';
+import { ProjectModule } from '../project/project.module';
 
 @Module({
-  controllers: [ApprovalController],
+  imports: [ProjectModule],
+  controllers: [ApprovalController, ApprovalInternalController, ApprovalManageController],
   providers: [ApprovalService],
   exports: [ApprovalService],
 })

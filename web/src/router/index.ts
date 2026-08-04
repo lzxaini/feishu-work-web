@@ -25,6 +25,7 @@ const router = createRouter({
         { path: 'projects/:id/edit', name: 'project-edit', component: () => import('../views/ProjectForm.vue') },
         { path: 'reports', name: 'reports', component: () => import('../views/ReportList.vue') },
         { path: 'reports/new', name: 'report-new', component: () => import('../views/ReportForm.vue') },
+        { path: 'approvals', name: 'approvals', component: () => import('../views/ApprovalView.vue') },
         { path: 'calendar', name: 'calendar', component: () => import('../views/CalendarView.vue') },
         { path: 'settings', name: 'settings', component: () => import('../views/SettingsView.vue') },
       ],

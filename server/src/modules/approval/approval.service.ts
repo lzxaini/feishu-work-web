@@ -7,15 +7,16 @@
  * @Description: Fuck Bug
  * 微信：lizx2066
  */
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FeishuApprovalService } from '../../feishu/feishu-approval.service';
 import { FeishuMessageService } from '../../feishu/feishu-message.service';
+import { ProjectService } from '../project/project.service';
 import { APPROVAL_STATUS, REPORT_STATUS } from '../../common/constants';
+import { JwtUser } from '../../common/decorators/current-user.decorator';
 
 /**
- * 审批对接：事件回调解析 + 状态回写 + 主动对账
- * 对应 docs/04 5.2 / 5.3
+ * 审批对接：系统内审批 + 飞书事件回调解析 + 状态回写 + 主动对账
  */
 @Injectable()
 export class ApprovalService {
@@ -25,7 +26,94 @@ export class ApprovalService {
     private prisma: PrismaService,
     private feishuApproval: FeishuApprovalService,
     private feishuMessage: FeishuMessageService,
+    private projectService: ProjectService,
   ) {}
+
+  /** 系统内审批：当前用户负责项目的待审批报工（管理员可看全部） */
+  async listPending(user: JwtUser) {
+    let projectIds: number[] = [];
+    if (user.isAdmin) {
+      const projects = await this.prisma.project.findMany({ where: { deleted: 0 }, select: { id: true } });
+      projectIds = projects.map((p) => p.id);
+    } else {
+      const members = await this.prisma.projectMember.findMany({ where: { openId: user.openId, role: 1 } });
+      projectIds = members.map((m) => m.projectId);
+    }
+    const items = await this.prisma.workReport.findMany({
+      where: { status: REPORT_STATUS.PENDING, projectId: { in: projectIds }, deleted: 0 },
+      include: { project: true },
+      orderBy: { reportDate: 'desc' },
+      take: 200,
+    });
+    return items.map((i) => this.fmt(i));
+  }
+
+  /** 审批通过 */
+  async approve(id: number, user: JwtUser) {
+    const report = await this.requirePending(id, user);
+    const updated = await this.prisma.workReport.update({
+      where: { id },
+      data: { status: REPORT_STATUS.APPROVED, approvedAt: new Date() },
+    });
+    await this.notifyApproval(report, true);
+    return this.fmt(updated);
+  }
+
+  /** 审批驳回 */
+  async reject(id: number, user: JwtUser, reason?: string) {
+    const report = await this.requirePending(id, user);
+    const updated = await this.prisma.workReport.update({
+      where: { id },
+      data: { status: REPORT_STATUS.REJECTED, rejectReason: reason || '' },
+    });
+    await this.notifyApproval(report, false, reason);
+    return this.fmt(updated);
+  }
+
+  private async requirePending(id: number, user: JwtUser) {
+    const report = await this.prisma.workReport.findFirst({ where: { id, deleted: 0, status: REPORT_STATUS.PENDING } });
+    if (!report) throw new NotFoundException('待审批报工不存在或已处理');
+    const isOwner = await this.projectService.isOwner(report.projectId, user.openId);
+    if (!user.isAdmin && !isOwner) throw new ForbiddenException('仅项目负责人或管理员可审批');
+    return report;
+  }
+
+  private fmt(report: any): any {
+    return {
+      ...report,
+      normalHours: Number(report.normalHours),
+      overtimeHours: Number(report.overtimeHours),
+      totalHours: Number(report.totalHours),
+    };
+  }
+
+  /** 审批通知：您xxxx年xx月xx日xx项目提交的加班x小时的报工审批已通过/驳回 */
+  private async notifyApproval(report: any, approved: boolean, reason?: string) {
+    try {
+      const project = await this.prisma.project.findUnique({ where: { id: report.projectId } });
+      const name = project?.name || '';
+      const date = this.formatDate(report.reportDate);
+      // 优先显示加班时长；无加班（节假日普通报工）显示普通时长
+      const hours = Number(report.overtimeHours) > 0
+        ? `加班${Number(report.overtimeHours)}小时`
+        : `普通${Number(report.normalHours)}小时`;
+      const prefix = `您${date}${name}项目提交的${hours}的报工`;
+      const msg = approved
+        ? `${prefix}审批已通过`
+        : reason
+          ? `${prefix}审批已驳回（${reason}）`
+          : `${prefix}审批已驳回`;
+      await this.feishuMessage.sendText(report.userOpenId, msg);
+    } catch (e: any) {
+      // 消息发送失败（如飞书未开通消息权限）不影响审批结果，仅记录
+      this.logger.warn(`通知报工人失败: ${e?.message}`);
+    }
+  }
+
+  private formatDate(d: any): string {
+    const date = new Date(d);
+    return `${date.getFullYear()}年${String(date.getMonth() + 1).padStart(2, '0')}月${String(date.getDate()).padStart(2, '0')}日`;
+  }
 
   /**
    * 飞书事件回调入口（approval_instance）

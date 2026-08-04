@@ -135,7 +135,8 @@ export class ReportService {
     });
 
     if (needApproval) {
-      await this.submitApproval(report);
+      // 系统内审批：需审批的报工保持「审批中」状态，由项目负责人在系统内审批（不再走飞书审批）
+      // 如需恢复飞书审批，可在此调用 await this.submitApproval(report);
     }
     return this.fmt(report);
   }
