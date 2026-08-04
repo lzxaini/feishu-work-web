@@ -1,9 +1,9 @@
 <!--
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:34
- * @LastEditors: lzx 1245634367@qq.com
- * @LastEditTime: 2026-08-03 22:44:35
- * @FilePath: \feishu-work\web\src\views\ProjectForm.vue
+ * @LastEditors: 17630921248 1245634367@qq.com
+ * @LastEditTime: 2026-08-04 13:56:49
+ * @FilePath: \feishu-work-web\web\src\views\ProjectForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
 -->
@@ -28,9 +28,9 @@
         <t-form-item label="项目名称" required-mark class="span-full">
         <t-input v-model="form.name" placeholder="请输入项目名称" />
       </t-form-item>
-      <t-form-item label="项目编号">
+      <!-- <t-form-item label="项目编号">
         <t-input v-model="form.code" placeholder="可选" />
-      </t-form-item>
+      </t-form-item> -->
       <t-form-item label="合同编号">
         <t-input v-model="form.contractNo" placeholder="可选" />
       </t-form-item>
@@ -38,8 +38,11 @@
       <t-form-item label="日期">
         <t-date-picker v-model="form.contractDate" format="YYYY-MM-DD" clearable style="width: 100%" placeholder="合同/立项日期" />
       </t-form-item>
-      <t-form-item label="起止日期" class="span-full">
-        <t-date-picker v-model="dateRange" type="range" format="YYYY-MM-DD" clearable style="width: 100%" />
+      <t-form-item label="开始日期">
+        <t-date-picker v-model="form.startDate" format="YYYY-MM-DD" clearable style="width: 100%" placeholder="项目开始日期" />
+      </t-form-item>
+      <t-form-item label="结束日期">
+        <t-date-picker v-model="form.endDate" format="YYYY-MM-DD" clearable style="width: 100%" placeholder="项目结束日期" />
       </t-form-item>
 
       <div class="form-section span-full">流程与优先级</div>
@@ -120,6 +123,8 @@ const form = ref<any>({
   status: 1,
   priority: 3,
   contractDate: '',
+  startDate: '',
+  endDate: '',
   contractNo: '',
   rdProjectDoc: '',
   contractAmount: undefined,
@@ -127,8 +132,6 @@ const form = ref<any>({
   patentApplied: 0,
   rdCostAmortization: undefined,
 });
-// 范围选择器 value 需为长度为 2 的数组，不能是空数组 []
-const dateRange = ref<string[]>(['', '']);
 const userOptions = ref<{ label: string; value: string }[]>([]);
 
 const statusOptions = [
@@ -167,8 +170,8 @@ async function save() {
       code: form.value.code || undefined,
       description: form.value.description || undefined,
       ownerOpenIds: form.value.ownerOpenIds,
-      startDate: dateRange.value?.[0] || undefined,
-      endDate: dateRange.value?.[1] || undefined,
+      startDate: form.value.startDate || undefined,
+      endDate: form.value.endDate || undefined,
       status: form.value.status,
       priority: form.value.priority,
       contractDate: form.value.contractDate || undefined,
@@ -204,6 +207,8 @@ onMounted(async () => {
       status: p.status ?? 1,
       priority: p.priority ?? 3,
       contractDate: p.contractDate ? String(p.contractDate).slice(0, 10) : '',
+      startDate: p.startDate ? String(p.startDate).slice(0, 10) : '',
+      endDate: p.endDate ? String(p.endDate).slice(0, 10) : '',
       contractNo: p.contractNo || '',
       rdProjectDoc: p.rdProjectDoc || '',
       contractAmount: p.contractAmount ?? undefined,
@@ -211,7 +216,6 @@ onMounted(async () => {
       patentApplied: p.patentApplied ?? 0,
       rdCostAmortization: p.rdCostAmortization ?? undefined,
     };
-    if (p.startDate && p.endDate) dateRange.value = [String(p.startDate).slice(0, 10), String(p.endDate).slice(0, 10)];
     userOptions.value = (p.members || []).map((m: any) => ({ label: m.userName || m.openId, value: m.openId }));
   }
 });
