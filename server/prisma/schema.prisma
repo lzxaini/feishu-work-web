@@ -13,17 +13,25 @@ datasource db {
 
 // 1. 项目表
 model Project {
-  id              Int       @id @default(autoincrement())
-  name            String    @db.VarChar(100)
-  code            String?   @db.VarChar(50)
-  description     String?   @db.VarChar(500)
-  status          Int       @default(1) // 1进行中 2暂停 3已归档
-  startDate       DateTime? @map("start_date") @db.Date
-  endDate         DateTime? @map("end_date") @db.Date
-  createdByOpenId String?   @map("created_by_open_id") @db.VarChar(64)
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deleted         Int       @default(0) // 软删除
+  id                  Int       @id @default(autoincrement())
+  name                String    @db.VarChar(100)
+  code                String?   @db.VarChar(50)
+  description         String?   @db.VarChar(500)
+  status              Int       @default(1) // 1进行中 2已完成 3已取消
+  priority            Int       @default(3) // 1紧急 2优先 3普通
+  startDate           DateTime? @map("start_date") @db.Date
+  endDate             DateTime? @map("end_date") @db.Date
+  contractDate        DateTime? @map("contract_date") @db.Date // 日期（合同/立项日期）
+  contractNo          String?   @map("contract_no") @db.VarChar(50) // 合同编号
+  rdProjectDoc        String?   @map("rd_project_doc") @db.VarChar(200) // 研发项目书
+  contractAmount      Decimal?  @map("contract_amount") @db.Decimal(14, 2) // 合同金额
+  remark              String?   @db.VarChar(500) // 备注
+  patentApplied       Int       @default(0) @map("patent_applied") // 申请专利 0否 1是
+  rdCostAmortization  Decimal?  @map("rd_cost_amortization") @db.Decimal(14, 2) // 研发费用摊销
+  createdByOpenId     String?   @map("created_by_open_id") @db.VarChar(64)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  deleted             Int       @default(0) // 软删除
 
   members ProjectMember[]
   reports WorkReport[]

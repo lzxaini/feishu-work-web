@@ -9,14 +9,33 @@
 -->
 <template>
   <div class="login-wrap">
+    <div class="login-bg-blob blob-1" />
+    <div class="login-bg-blob blob-2" />
+
     <div class="login-card surface-card">
       <div class="brand-logo">📋</div>
       <h1 class="login-title">飞书报工系统</h1>
-      <p class="status">{{ status }}</p>
-      <t-button v-if="failed" theme="primary" shape="round" size="large" @click="retry">
+      <p class="login-desc">项目工时报送 · 审批 · 统计一体化</p>
+
+      <div class="status-area">
+        <span v-if="!failed" class="spinner" />
+        <p class="status" :class="{ 'status-error': failed }">{{ status }}</p>
+      </div>
+
+      <t-button
+        v-if="failed"
+        class="retry-btn"
+        theme="primary"
+        shape="round"
+        size="large"
+        block
+        @click="retry"
+      >
         重新登录
       </t-button>
     </div>
+
+    <p class="login-footer">© 飞书报工系统</p>
   </div>
 </template>
 
@@ -189,31 +208,124 @@ onMounted(() => {
 
 <style scoped>
 .login-wrap {
+  position: relative;
   height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: #f5f5f7; /* DESIGN: canvas-parchment */
+  overflow: hidden;
+  padding: 24px;
+  box-sizing: border-box;
 }
+
+/* 背景装饰光斑，营造 Apple 风格的柔和纵深感 */
+.login-bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.blob-1 {
+  width: 360px;
+  height: 360px;
+  top: -120px;
+  left: -100px;
+  background: radial-gradient(circle, rgba(0, 102, 204, 0.18), transparent 70%);
+}
+.blob-2 {
+  width: 420px;
+  height: 420px;
+  bottom: -160px;
+  right: -120px;
+  background: radial-gradient(circle, rgba(0, 102, 204, 0.12), transparent 70%);
+}
+
 .login-card {
-  width: 380px;
+  position: relative;
+  width: 100%;
+  max-width: 380px;
   text-align: center;
   padding: 48px 32px;
+  box-sizing: border-box;
 }
 .brand-logo {
-  font-size: 48px;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #e8f0fe, #d6e6fb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
   line-height: 1;
 }
 .login-title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: #1d1d1f;
-  margin: 16px 0 8px;
+  margin: 20px 0 6px;
+}
+.login-desc {
+  font-size: 13px;
+  color: #86868b;
+  margin: 0 0 28px;
+}
+.status-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  justify-content: center;
+}
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0, 102, 204, 0.18);
+  border-top-color: #0066cc; /* DESIGN: action-blue */
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .status {
   color: #86868b;
   font-size: 14px;
-  min-height: 22px;
+  margin: 0;
+}
+.status-error {
+  color: #d70015;
+}
+.retry-btn {
+  margin-top: 20px;
+}
+.login-footer {
+  position: relative;
+  margin-top: 24px;
+  font-size: 12px;
+  color: #a1a1a6;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 36px 24px;
+  }
+  .brand-logo {
+    width: 60px;
+    height: 60px;
+    font-size: 30px;
+    border-radius: 16px;
+  }
+  .login-title {
+    font-size: 22px;
+  }
 }
 </style>

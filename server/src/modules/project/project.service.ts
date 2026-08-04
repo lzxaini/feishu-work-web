@@ -17,11 +17,12 @@ import { JwtUser } from '../../common/decorators/current-user.decorator';
 export class ProjectService {
   constructor(private prisma: PrismaService) {}
 
-  /** 项目列表（分页/搜索/状态过滤） */
-  async list(query: { keyword?: string; status?: string; page?: number; pageSize?: number }) {
+  /** 项目列表（分页/搜索/状态优先级过滤） */
+  async list(query: { keyword?: string; status?: string; priority?: string; page?: number; pageSize?: number }) {
     const where: any = { deleted: 0 };
     if (query.keyword) where.name = { contains: query.keyword };
     if (query.status) where.status = Number(query.status);
+    if (query.priority) where.priority = Number(query.priority);
     const page = query.page || 1;
     const pageSize = query.pageSize || 20;
     const [total, items] = await this.prisma.$transaction([
@@ -57,8 +58,16 @@ export class ProjectService {
         code: dto.code,
         description: dto.description,
         status: dto.status ?? PROJECT_STATUS.ACTIVE,
+        priority: dto.priority ?? 3,
         startDate: dto.startDate ? new Date(dto.startDate) : null,
         endDate: dto.endDate ? new Date(dto.endDate) : null,
+        contractDate: dto.contractDate ? new Date(dto.contractDate) : null,
+        contractNo: dto.contractNo,
+        rdProjectDoc: dto.rdProjectDoc,
+        contractAmount: dto.contractAmount ?? null,
+        remark: dto.remark,
+        patentApplied: dto.patentApplied ?? 0,
+        rdCostAmortization: dto.rdCostAmortization ?? null,
         createdByOpenId: user.openId,
         members: {
           create: owners.map((o) => ({ openId: o, userName: nameMap.get(o) || null, role: 1 })),
@@ -78,8 +87,16 @@ export class ProjectService {
     if (dto.code !== undefined) data.code = dto.code;
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.status !== undefined) data.status = dto.status;
+    if (dto.priority !== undefined) data.priority = dto.priority;
     if (dto.startDate !== undefined) data.startDate = dto.startDate ? new Date(dto.startDate) : null;
     if (dto.endDate !== undefined) data.endDate = dto.endDate ? new Date(dto.endDate) : null;
+    if (dto.contractDate !== undefined) data.contractDate = dto.contractDate ? new Date(dto.contractDate) : null;
+    if (dto.contractNo !== undefined) data.contractNo = dto.contractNo;
+    if (dto.rdProjectDoc !== undefined) data.rdProjectDoc = dto.rdProjectDoc;
+    if (dto.contractAmount !== undefined) data.contractAmount = dto.contractAmount;
+    if (dto.remark !== undefined) data.remark = dto.remark;
+    if (dto.patentApplied !== undefined) data.patentApplied = dto.patentApplied;
+    if (dto.rdCostAmortization !== undefined) data.rdCostAmortization = dto.rdCostAmortization;
 
     // 更新负责人：删除原负责人再重建
     if (dto.ownerOpenIds) {

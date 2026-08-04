@@ -93,6 +93,7 @@ const menus = computed(() => {
   border-radius: 18px;
   padding: 24px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 .home-card:hover {
@@ -142,6 +143,42 @@ const menus = computed(() => {
   }
   .home-title {
     font-size: 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home {
+    padding: 4px 0 32px;
+  }
+  .home-hero {
+    margin-bottom: 20px;
+  }
+  .home-title {
+    font-size: 22px;
+  }
+  .home-sub {
+    font-size: 14px;
+  }
+  .home-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .home-card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  .card-title {
+    font-size: 15px;
+  }
+  .card-desc {
+    font-size: 12px;
   }
 }
 </style>

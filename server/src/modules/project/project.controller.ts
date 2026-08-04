@@ -24,10 +24,11 @@ export class ProjectController {
   list(
     @Query('keyword') keyword?: string,
     @Query('status') status?: string,
+    @Query('priority') priority?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ) {
-    return this.projectService.list({ keyword, status, page: Number(page) || 1, pageSize: Number(pageSize) || 20 });
+    return this.projectService.list({ keyword, status, priority, page: Number(page) || 1, pageSize: Number(pageSize) || 20 });
   }
 
   @Get(':id')

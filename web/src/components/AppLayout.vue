@@ -73,6 +73,10 @@ onMounted(() => auth.fetchMe());
 .user-name {
   font-size: 14px;
   color: #1d1d1f;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .app-content {
   flex: 1;

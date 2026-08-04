@@ -28,8 +28,15 @@ export const APPROVAL_STATUS = {
 // 项目状态
 export const PROJECT_STATUS = {
   ACTIVE: 1, // 进行中
-  PAUSED: 2, // 暂停
-  ARCHIVED: 3, // 已归档
+  COMPLETED: 2, // 已完成
+  CANCELLED: 3, // 已取消
+} as const;
+
+// 项目优先级
+export const PROJECT_PRIORITY = {
+  URGENT: 1, // 紧急
+  HIGH: 2, // 优先
+  NORMAL: 3, // 普通
 } as const;
 
 // 日历类型
