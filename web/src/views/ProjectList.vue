@@ -1,9 +1,9 @@
 <!--
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:32
- * @LastEditors: lzx 1245634367@qq.com
- * @LastEditTime: 2026-08-03 22:44:32
- * @FilePath: \feishu-work\web\src\views\ProjectList.vue
+ * @LastEditors: 17630921248 1245634367@qq.com
+ * @LastEditTime: 2026-08-04 12:53:08
+ * @FilePath: \feishu-work-web\web\src\views\ProjectList.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
 -->
@@ -28,10 +28,43 @@
       <t-button v-if="auth.isAdmin" theme="primary" shape="round" @click="router.push('/projects/new')">新建项目</t-button>
     </div>
 
-    <div class="surface-card table-card">
+    <div class="surface-card table-card desktop-only">
       <div class="table-scroll">
         <t-table :data="rows" :columns="columns" :loading="loading" row-key="id" hover table-layout="fixed" />
       </div>
+    </div>
+
+    <!-- 移动端卡片列表 -->
+    <div class="mobile-cards">
+      <div
+        v-for="row in rows"
+        :key="row.id"
+        class="project-card surface-card"
+        role="button"
+        tabindex="0"
+        @click="router.push({ name: 'project-edit', params: { id: row.id } })"
+        @keyup.enter="router.push({ name: 'project-edit', params: { id: row.id } })"
+      >
+        <div class="card-head">
+          <span class="card-name">{{ row.name }}</span>
+          <t-tag :theme="statusTheme(row.status)" size="small" variant="light">{{ statusText(row.status) }}</t-tag>
+        </div>
+        <div class="card-meta">
+          <t-tag :theme="priorityTheme(row.priority)" size="small" variant="light">{{ priorityText(row.priority) }}</t-tag>
+          <span class="card-date">📅 {{ dateText(row.contractDate) }}</span>
+        </div>
+        <div class="card-info">
+          <div class="info-row"><span class="info-label">合同编号</span><span class="info-value">{{ row.contractNo || '-' }}</span></div>
+          <div class="info-row"><span class="info-label">合同金额</span><span class="info-value">{{ moneyText(row.contractAmount) }}</span></div>
+          <div class="info-row"><span class="info-label">负责人</span><span class="info-value">{{ ownerNames(row) }}</span></div>
+          <div v-if="row.remark" class="info-row"><span class="info-label">备注</span><span class="info-value">{{ row.remark }}</span></div>
+        </div>
+        <div class="card-actions" @click.stop>
+          <t-button theme="primary" variant="text" size="small" @click="router.push({ name: 'project-edit', params: { id: row.id } })">编辑</t-button>
+          <t-button v-if="auth.isAdmin" theme="danger" variant="text" size="small" @click="remove(row)">删除</t-button>
+        </div>
+      </div>
+      <t-empty v-if="!loading && rows.length === 0" description="暂无项目数据" />
     </div>
 
     <div class="pager">
@@ -89,6 +122,9 @@ function moneyText(v: any) {
   if (v === null || v === undefined || v === '') return '-';
   const n = Number(v);
   return Number.isNaN(n) ? '-' : n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function ownerNames(row: any) {
+  return (row.members || []).map((m: any) => m.userName || m.openId).join('、') || '-';
 }
 
 const columns = [
@@ -221,12 +257,93 @@ onMounted(load);
   justify-content: flex-end;
 }
 
+/* 移动端卡片列表 */
+.mobile-cards {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+.project-card {
+  padding: 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.project-card:active {
+  transform: scale(0.99);
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.card-name {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #1d1d1f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.card-date {
+  font-size: 13px;
+  color: #86868b;
+}
+.card-info {
+  border-top: 1px solid var(--td-component-border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.info-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  color: #1d1d1f;
+}
+.info-label {
+  flex-shrink: 0;
+  width: 64px;
+  color: #86868b;
+}
+.info-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 @media (max-width: 720px) {
   .page-title {
     font-size: 18px;
   }
   .toolbar > * {
     flex: 1 1 auto;
+  }
+  .desktop-only {
+    display: none;
+  }
+  .mobile-cards {
+    display: flex;
+  }
+  .pager {
+    justify-content: center;
   }
 }
 </style>

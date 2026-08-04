@@ -12,4 +12,8 @@ import request from './request';
 export const login = (code: string) =>
   request.post<any, { token: string; user: any }>('/auth/feishu/login', { code });
 
+/** 临时登录（仅本地调试，后端 DEV_LOGIN_ENABLED=1 时可用） */
+export const devLogin = () =>
+  request.post<any, { token: string; user: any }>('/auth/dev/login');
+
 export const getMe = () => request.get<any, any>('/auth/me');

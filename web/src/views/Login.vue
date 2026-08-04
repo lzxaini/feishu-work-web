@@ -33,6 +33,20 @@
       >
         重新登录
       </t-button>
+
+      <!-- 临时登录（仅本地调试） -->
+      <t-button
+        v-if="devLoginEnabled"
+        class="dev-login-btn"
+        theme="default"
+        variant="outline"
+        shape="round"
+        block
+        :loading="devLogging"
+        @click="doDevLogin"
+      >
+        临时登录（调试）
+      </t-button>
     </div>
 
     <p class="login-footer">© 飞书报工系统</p>
@@ -48,6 +62,9 @@ const router = useRouter();
 const auth = useAuthStore();
 const status = ref('正在登录…');
 const failed = ref(false);
+const devLogging = ref(false);
+// 仅本地调试：VITE_DEV_LOGIN=1 时显示临时登录按钮
+const devLoginEnabled = import.meta.env.VITE_DEV_LOGIN === '1';
 
 // ---------- 环境判断 ----------
 // 飞书 JSSDK 是异步注入的：不能同步读 window.tt，需结合 UA 判断环境
@@ -180,6 +197,21 @@ function retry() {
   else startOAuth();
 }
 
+// 临时登录：一键以管理员身份进入（仅本地调试，后端 DEV_LOGIN_ENABLED=1）
+async function doDevLogin() {
+  devLogging.value = true;
+  status.value = '临时登录中…';
+  try {
+    await auth.loginDev();
+    router.push('/');
+  } catch (e: any) {
+    failed.value = true;
+    status.value = '临时登录失败：' + (e?.message || '未知错误');
+  } finally {
+    devLogging.value = false;
+  }
+}
+
 onMounted(() => {
   if (auth.token) {
     router.push('/');
@@ -196,6 +228,11 @@ onMounted(() => {
 
   // 2) 浏览器直接访问 → 网页授权
   if (!isFeishuEnv()) {
+    if (devLoginEnabled) {
+      // 本地调试模式：不自动跳转，停留在登录页等用户点"临时登录"或 OAuth
+      status.value = '调试模式：可点击下方「临时登录」直接进入系统';
+      return;
+    }
     startOAuth();
     return;
   }
@@ -306,6 +343,9 @@ onMounted(() => {
 }
 .retry-btn {
   margin-top: 20px;
+}
+.dev-login-btn {
+  margin-top: 12px;
 }
 .login-footer {
   position: relative;

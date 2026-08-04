@@ -8,7 +8,7 @@
  * 微信：lizx2066
  */
 import { defineStore } from 'pinia';
-import { login, getMe } from '../api/auth';
+import { login, devLogin, getMe } from '../api/auth';
 
 export interface UserInfo {
   openId: string;
@@ -29,6 +29,13 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async loginByCode(code: string) {
       const res = await login(code);
+      this.token = res.token;
+      this.user = res.user;
+      localStorage.setItem('token', res.token);
+    },
+    /** 临时登录（仅本地调试） */
+    async loginDev() {
+      const res = await devLogin();
       this.token = res.token;
       this.user = res.user;
       localStorage.setItem('token', res.token);

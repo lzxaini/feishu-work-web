@@ -25,6 +25,15 @@ export class AuthController {
     return this.authService.login(body.code);
   }
 
+  /**
+   * 临时登录（仅本地调试）：浏览器直接访问时一键以管理员身份登录
+   * 仅当环境变量 DEV_LOGIN_ENABLED=1 时开放，生产环境务必关闭
+   */
+  @Post('dev/login')
+  devLogin() {
+    return this.authService.devLogin();
+  }
+
   /** 网页授权回调（浏览器直接访问备选，占位） */
   @Get('feishu/callback')
   callback(): { message: string } {
