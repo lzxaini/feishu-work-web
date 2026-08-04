@@ -93,6 +93,10 @@
           <span class="config-label">工作日普通时长上限</span>
           <t-input-number v-model="hoursLimit" :min="1" :max="24" :step="1" style="width: 140px" />
         </div>
+        <div class="config-item">
+          <span class="config-label">节假日允许报工</span>
+          <t-switch v-model="holidayEnabled" />
+        </div>
         <t-button theme="primary" shape="round" :loading="savingConfig" @click="saveConfig">保存</t-button>
       </div>
     </div>
@@ -114,6 +118,7 @@ const admins = ref<any[]>([]);
 const userOptions = ref<{ label: string; value: string }[]>([]);
 const newAdminOpenId = ref('');
 const hoursLimit = ref(8);
+const holidayEnabled = ref(false);
 const lastSyncText = ref('');
 
 async function searchUsers(keyword: string) {
@@ -169,12 +174,14 @@ async function removeAdmin(row: any) {
 async function loadConfig() {
   const cfg = await getConfig();
   if (cfg.working_hours_limit) hoursLimit.value = Number(cfg.working_hours_limit);
+  holidayEnabled.value = cfg.holiday_report_enabled === '1';
 }
 
 async function saveConfig() {
   savingConfig.value = true;
   try {
     await setConfig('working_hours_limit', String(hoursLimit.value));
+    await setConfig('holiday_report_enabled', holidayEnabled.value ? '1' : '0');
     MessagePlugin.success('已保存');
   } finally {
     savingConfig.value = false;

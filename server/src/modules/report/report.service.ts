@@ -47,6 +47,13 @@ export class ReportService {
     return Number(this.config.get('WORKING_HOURS_LIMIT') || DEFAULT_WORKING_HOURS_LIMIT);
   }
 
+  /** 节假日是否允许报工（SystemConfig 表，默认关闭） */
+  private async isHolidayReportEnabled(): Promise<boolean> {
+    const cfg = await this.prisma.systemConfig.findUnique({ where: { configKey: 'holiday_report_enabled' } });
+    if (!cfg?.configValue) return false;
+    return cfg.configValue === '1';
+  }
+
   private getApprovalCode(): string {
     return this.config.get('FEISHU_APPROVAL_CODE') || '';
   }
@@ -111,6 +118,12 @@ export class ReportService {
     const project = await this.requireProjectActive(dto.projectId);
     const reportDate = new Date(dto.reportDate);
     const isHoliday = await this.calendar.isHoliday(reportDate);
+
+    // 节假日是否允许报工（系统配置，默认关闭）
+    if (isHoliday && !(await this.isHolidayReportEnabled())) {
+      throw new BadRequestException('节假日不允许提交报工，请选择工作日');
+    }
+
     const limit = await this.getHoursLimit();
     const normal = dto.normalHours ?? 0;
     const overtime = dto.overtimeHours ?? 0;
