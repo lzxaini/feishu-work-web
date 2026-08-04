@@ -1,9 +1,9 @@
 <!--
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:57
- * @LastEditors: lzx 1245634367@qq.com
- * @LastEditTime: 2026-08-03 22:44:58
- * @FilePath: \feishu-work\web\src\views\ReportList.vue
+ * @LastEditors: 17630921248 1245634367@qq.com
+ * @LastEditTime: 2026-08-04 14:00:05
+ * @FilePath: \feishu-work-web\web\src\views\ReportList.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
 -->
@@ -76,7 +76,7 @@
     <div class="mobile-cards">
       <div v-for="row in rows" :key="row.id" class="report-card surface-card">
         <div class="card-head">
-          <span class="card-name">{{ row.project?.name || '-' }}</span>
+          <span class="card-name name-link" @click="goProject(row.project?.id)">{{ row.project?.name || '-' }}</span>
           <t-tag :theme="statusTheme(row.status)" size="small" variant="light">{{ statusText(row.status) }}</t-tag>
         </div>
         <div class="card-meta">
@@ -143,8 +143,27 @@ function dateText(v: any) {
 }
 
 const columns = [
-  { colKey: 'project.name', title: '项目', minWidth: 140, ellipsis: true },
-  { colKey: 'reportDate', title: '日期', width: 110, cell: (h: any, { row }: any) => dateText(row?.reportDate) },
+  {
+    colKey: 'project.name',
+    title: '项目',
+    minWidth: 100,
+    ellipsis: true,
+    cell: (h: any, { row }: any) => {
+      const pid = row?.project?.id;
+      return h(
+        'a',
+        {
+          class: 'name-link',
+          onClick: (e: any) => {
+            e.stopPropagation();
+            if (pid) router.push({ name: 'project-detail', params: { id: pid } });
+          },
+        },
+        { default: () => row?.project?.name || '-' },
+      );
+    },
+  },
+  { colKey: 'reportDate', title: '日期', width: 150, cell: (h: any, { row }: any) => dateText(row?.reportDate) },
   { colKey: 'hours', title: '普通/加班', width: 110, cell: (h: any, { row }: any) => `${row?.normalHours ?? 0} / ${row?.overtimeHours ?? 0} h` },
   { colKey: 'totalHours', title: '总时长', width: 90 },
   {
@@ -199,6 +218,10 @@ function setStatusFilter(v: number) {
   filters.value = { ...filters.value, status: filters.value.status === v ? undefined : v };
   page.value = 1;
   load();
+}
+
+function goProject(pid: any) {
+  if (pid) router.push({ name: 'project-detail', params: { id: pid } });
 }
 
 function edit(_row: any) {
@@ -350,6 +373,16 @@ onMounted(async () => {
 .table-tip {
   font-size: 12px;
   color: #86868b;
+}
+
+.name-link {
+  color: #0066cc;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+.name-link:hover {
+  text-decoration: underline;
 }
 
 .table-card :deep(.t-table) {
