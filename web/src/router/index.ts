@@ -17,8 +17,8 @@ const router = createRouter({
     {
       path: '/',
       component: () => import('../components/AppLayout.vue'),
-      redirect: '/projects',
       children: [
+        { path: '', name: 'home', component: () => import('../views/HomeView.vue') },
         { path: 'projects', name: 'projects', component: () => import('../views/ProjectList.vue') },
         { path: 'projects/new', name: 'project-new', component: () => import('../views/ProjectForm.vue') },
         { path: 'projects/:id/edit', name: 'project-edit', component: () => import('../views/ProjectForm.vue') },
