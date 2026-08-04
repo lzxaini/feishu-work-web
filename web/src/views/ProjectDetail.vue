@@ -2,7 +2,7 @@
  * @Author: 17630921248 1245634367@qq.com
  * @Date: 2026-08-04 13:49:25
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-04 13:49:26
+ * @LastEditTime: 2026-08-04 17:06:11
  * @FilePath: \feishu-work-web\web\src\views\ProjectDetail.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -16,7 +16,7 @@
       <div class="hero-top">
         <t-button variant="text" theme="default" class="back-btn" @click="router.push('/projects')">← 返回项目管理</t-button>
         <div class="hero-actions">
-          <t-button theme="default" variant="outline" shape="round" @click="router.push({ name: 'project-edit', params: { id: id } })">编辑项目</t-button>
+          <t-button v-if="auth.isAdmin" theme="default" variant="outline" shape="round" @click="router.push({ name: 'project-edit', params: { id: id } })">编辑项目</t-button>
           <t-button v-if="auth.isAdmin" theme="danger" variant="outline" shape="round" @click="remove">删除</t-button>
         </div>
       </div>

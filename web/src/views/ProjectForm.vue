@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:34
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-04 13:56:49
+ * @LastEditTime: 2026-08-04 17:01:26
  * @FilePath: \feishu-work-web\web\src\views\ProjectForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -25,8 +25,8 @@
     <div class="surface-card form-card">
       <t-form :data="form" label-align="top" class="form-grid">
         <div class="form-section span-full">基础信息</div>
-        <t-form-item label="项目名称" required-mark class="span-full">
-        <t-input v-model="form.name" placeholder="请输入项目名称" />
+        <t-form-item label="研发项目书" required-mark class="span-full">
+        <t-input v-model="form.name" placeholder="请输入研发项目书" />
       </t-form-item>
       <!-- <t-form-item label="项目编号">
         <t-input v-model="form.code" placeholder="可选" />
@@ -35,9 +35,9 @@
         <t-input v-model="form.contractNo" placeholder="可选" />
       </t-form-item>
 
-      <t-form-item label="日期">
+      <!-- <t-form-item label="日期">
         <t-date-picker v-model="form.contractDate" format="YYYY-MM-DD" clearable style="width: 100%" placeholder="合同/立项日期" />
-      </t-form-item>
+      </t-form-item> -->
       <t-form-item label="开始日期">
         <t-date-picker v-model="form.startDate" format="YYYY-MM-DD" clearable style="width: 100%" placeholder="项目开始日期" />
       </t-form-item>
@@ -68,14 +68,14 @@
       <t-form-item label="研发费用摊销">
         <t-input-number v-model="form.rdCostAmortization" style="width: 100%" theme="normal" placeholder="可选" :min="0" />
       </t-form-item>
-      <t-form-item label="研发项目书">
+      <!-- <t-form-item label="研发项目书">
         <t-input v-model="form.rdProjectDoc" placeholder="可选" />
-      </t-form-item>
+      </t-form-item> -->
 
-      <t-form-item label="负责人" class="span-full">
+      <t-form-item label="负责人">
         <t-select
-          v-model="form.ownerOpenIds"
-          multiple
+          v-model="form.ownerOpenId"
+          clearable
           filterable
           :options="userOptions"
           :loading="searching"
@@ -119,7 +119,7 @@ const form = ref<any>({
   name: '',
   code: '',
   description: '',
-  ownerOpenIds: [],
+  ownerOpenId: '',
   status: 1,
   priority: 3,
   contractDate: '',
@@ -169,7 +169,7 @@ async function save() {
       name: form.value.name,
       code: form.value.code || undefined,
       description: form.value.description || undefined,
-      ownerOpenIds: form.value.ownerOpenIds,
+      ownerOpenIds: form.value.ownerOpenId ? [form.value.ownerOpenId] : [],
       startDate: form.value.startDate || undefined,
       endDate: form.value.endDate || undefined,
       status: form.value.status,
@@ -203,7 +203,7 @@ onMounted(async () => {
       name: p.name,
       code: p.code || '',
       description: p.description || '',
-      ownerOpenIds: (p.members || []).filter((m: any) => m.role === 1).map((m: any) => m.openId),
+      ownerOpenId: ((p.members || []).find((m: any) => m.role === 1) || {} as any).openId || '',
       status: p.status ?? 1,
       priority: p.priority ?? 3,
       contractDate: p.contractDate ? String(p.contractDate).slice(0, 10) : '',
@@ -216,7 +216,13 @@ onMounted(async () => {
       patentApplied: p.patentApplied ?? 0,
       rdCostAmortization: p.rdCostAmortization ?? undefined,
     };
-    userOptions.value = (p.members || []).map((m: any) => ({ label: m.userName || m.openId, value: m.openId }));
+    // 合并当前负责人到候选列表（不要覆盖，否则编辑时无法选择其他负责人）
+    const memberOptions: { label: string; value: string }[] = (p.members || []).map((m: any) => ({
+      label: m.userName || m.openId,
+      value: m.openId,
+    }));
+    const existing = new Set(userOptions.value.map((o) => o.value));
+    userOptions.value = [...userOptions.value, ...memberOptions.filter((o) => !existing.has(o.value))];
   }
 });
 </script>
