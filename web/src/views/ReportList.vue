@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:57
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-04 14:00:05
+ * @LastEditTime: 2026-08-04 16:29:26
  * @FilePath: \feishu-work-web\web\src\views\ReportList.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -191,8 +191,8 @@ const columns = [
     fixed: 'right',
     cell: (h: any, { row }: any) =>
       h('div', { style: 'display:flex;gap:4px;align-items:center' }, [
-        row?.status === 1 ? h(Button, { theme: 'primary', variant: 'text', onClick: () => edit(row) }, { default: () => '编辑' }) : null,
-        row?.status !== 2 ? h(Button, { theme: 'danger', variant: 'text', onClick: () => remove(row) }, { default: () => '撤销' }) : null,
+        // row?.status === 1 ? h(Button, { theme: 'primary', variant: 'text', onClick: () => edit(row) }, { default: () => '编辑' }) : null,
+        row?.status === 1 ? h(Button, { theme: 'danger', variant: 'text', onClick: () => remove(row) }, { default: () => '撤销' }) : null,
       ]),
   },
 ];
