@@ -1,9 +1,9 @@
 <!--
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:29
- * @LastEditors: lzx 1245634367@qq.com
- * @LastEditTime: 2026-08-03 22:44:29
- * @FilePath: \feishu-work\web\src\views\Login.vue
+ * @LastEditors: 17630921248 1245634367@qq.com
+ * @LastEditTime: 2026-08-04 16:40:05
+ * @FilePath: \feishu-work-web\web\src\views\Login.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
 -->
@@ -13,8 +13,10 @@
     <div class="login-bg-blob blob-2" />
 
     <div class="login-card surface-card">
-      <div class="brand-logo">📋</div>
-      <h1 class="login-title">飞书报工系统</h1>
+      <div class="brand-logo">
+        <img class="logo-img" src="../assets/logo.png" alt="">
+      </div>
+      <h1 class="login-title">BEASUN</h1>
       <p class="login-desc">项目工时报送 · 审批 · 统计一体化</p>
 
       <div class="status-area">
@@ -22,29 +24,13 @@
         <p class="status" :class="{ 'status-error': failed }">{{ status }}</p>
       </div>
 
-      <t-button
-        v-if="failed"
-        class="retry-btn"
-        theme="primary"
-        shape="round"
-        size="large"
-        block
-        @click="retry"
-      >
+      <t-button v-if="failed" class="retry-btn" theme="primary" shape="round" size="large" block @click="retry">
         重新登录
       </t-button>
 
       <!-- 临时登录（仅本地调试） -->
-      <t-button
-        v-if="devLoginEnabled"
-        class="dev-login-btn"
-        theme="default"
-        variant="outline"
-        shape="round"
-        block
-        :loading="devLogging"
-        @click="doDevLogin"
-      >
+      <t-button v-if="devLoginEnabled" class="dev-login-btn" theme="default" variant="outline" shape="round" block
+        :loading="devLogging" @click="doDevLogin">
         临时登录（调试）
       </t-button>
     </div>
@@ -251,7 +237,8 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f5f5f7; /* DESIGN: canvas-parchment */
+  background: #f5f5f7;
+  /* DESIGN: canvas-parchment */
   overflow: hidden;
   padding: 24px;
   box-sizing: border-box;
@@ -265,6 +252,7 @@ onMounted(() => {
   opacity: 0.5;
   pointer-events: none;
 }
+
 .blob-1 {
   width: 360px;
   height: 360px;
@@ -272,6 +260,7 @@ onMounted(() => {
   left: -100px;
   background: radial-gradient(circle, rgba(0, 102, 204, 0.18), transparent 70%);
 }
+
 .blob-2 {
   width: 420px;
   height: 420px;
@@ -288,30 +277,39 @@ onMounted(() => {
   padding: 48px 32px;
   box-sizing: border-box;
 }
+
 .brand-logo {
   width: 72px;
   height: 72px;
   margin: 0 auto;
   border-radius: 20px;
-  background: linear-gradient(135deg, #e8f0fe, #d6e6fb);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 36px;
   line-height: 1;
 }
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+}
+
 .login-title {
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 26px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #1d1d1f;
+  color: #656465;
   margin: 20px 0 6px;
 }
+
 .login-desc {
   font-size: 13px;
   color: #86868b;
   margin: 0 0 28px;
 }
+
 .status-area {
   display: flex;
   flex-direction: column;
@@ -320,33 +318,41 @@ onMounted(() => {
   min-height: 40px;
   justify-content: center;
 }
+
 .spinner {
   width: 20px;
   height: 20px;
   border: 2px solid rgba(0, 102, 204, 0.18);
-  border-top-color: #0066cc; /* DESIGN: action-blue */
+  border-top-color: #0066cc;
+  /* DESIGN: action-blue */
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
+
 .status {
   color: #86868b;
   font-size: 14px;
   margin: 0;
 }
+
 .status-error {
   color: #d70015;
 }
+
 .retry-btn {
   margin-top: 20px;
 }
+
 .dev-login-btn {
   margin-top: 12px;
 }
+
 .login-footer {
   position: relative;
   margin-top: 24px;
@@ -358,12 +364,14 @@ onMounted(() => {
   .login-card {
     padding: 36px 24px;
   }
+
   .brand-logo {
     width: 60px;
     height: 60px;
     font-size: 30px;
     border-radius: 16px;
   }
+
   .login-title {
     font-size: 22px;
   }

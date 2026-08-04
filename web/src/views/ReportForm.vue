@@ -39,20 +39,27 @@
         <t-form-item label="普通时长">
           <t-input-number
             v-model="form.normalHours"
+            :disabled="quota.remaining === 0"
             :min="0"
-            :max="quota.used > 0 ? quota.remaining : quota.limit"
+            :max="quota.remaining"
             :step="0.5"
             style="width: 100%"
           />
         </t-form-item>
         <t-form-item label="加班时长">
-          <t-input-number v-model="form.overtimeHours" :min="0" :max="24" :step="0.5" style="width: 100%" />
+          <t-input-number
+            v-model="form.overtimeHours"
+            :disabled="quota.remaining > 0"
+            :min="0"
+            :max="24"
+            :step="0.5"
+            style="width: 100%"
+          />
         </t-form-item>
         <div class="span-full field-tips">
-          <p v-if="quota.used === 0">普通时长：今日暂无报工，最多可报 {{ quota.limit }}h</p>
-          <p v-else-if="quota.remaining > 0">普通时长：今日已报 {{ quota.used }}h，最多还可报 {{ quota.remaining }}h</p>
-          <p v-else>普通时长：今日已报满 {{ quota.limit }}h，普通时长不可再报；如需继续请填写加班时长</p>
-          <p>加班时长：&gt;0 将走审批</p>
+          <p v-if="quota.remaining > 0">普通时长：今日还可报 {{ quota.remaining }}h（普通额度用完后才可填写加班）</p>
+          <p v-else>普通时长：今日已报满 {{ quota.limit }}h，普通时长不可再报</p>
+          <p>加班时长：{{ quota.remaining > 0 ? '普通额度未用完，暂不可填写加班' : '可填写，>0 将走审批' }}</p>
         </div>
 
         <t-form-item v-if="holiday !== null" label="提示" class="span-full">
@@ -102,8 +109,9 @@ async function loadQuota() {
   }
   const res = await getReportQuota(form.value.reportDate);
   quota.value = res;
-  // 普通时长始终可编辑：无报工默认 0（最大为上限），有报工默认剩余额度（最大为剩余额度）
+  // 普通时长：有余额默认剩余额度、无余额为 0（禁用）；加班时长重置为 0（有余额时禁填加班）
   form.value.normalHours = res.used > 0 ? res.remaining : 0;
+  form.value.overtimeHours = 0;
 }
 
 async function checkHoliday(date: string) {
