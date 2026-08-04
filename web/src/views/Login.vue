@@ -30,8 +30,11 @@ const auth = useAuthStore();
 const status = ref('正在飞书免登中…');
 const failed = ref(false);
 
-// 飞书客户端 JSSDK（tt.*）
-const tt = (window as any).tt;
+// 飞书 JSSDK 是异步注入的：不能在 setup 顶层同步读 window.tt（此时必为 undefined）
+// 需等 window.h5sdk.ready / ttready 事件触发后，window.tt 才可用
+function getTT() {
+  return (window as any).tt;
+}
 
 function loginWithCode(code: string) {
   auth
@@ -44,6 +47,7 @@ function loginWithCode(code: string) {
 }
 
 function requestAuthCode() {
+  const tt = getTT();
   if (!tt?.requestAuthCode) {
     failed.value = true;
     status.value = '当前环境不支持免登，请在飞书客户端内打开应用（浏览器访问请接入网页授权 OAuth）';
@@ -61,6 +65,7 @@ function requestAuthCode() {
 
 // requestAccess 优先，低版本回退 requestAuthCode（对应 docs/04 3.1）
 function requestAccess() {
+  const tt = getTT();
   if (tt?.requestAccess) {
     tt.requestAccess({
       appID: import.meta.env.VITE_FEISHU_APP_ID,
@@ -79,9 +84,38 @@ function requestAccess() {
   }
 }
 
+function startLogin() {
+  const h5sdk = (window as any).h5sdk;
+  const tt = getTT();
+  if (h5sdk?.ready) {
+    // 新版 JSSDK：等 SDK 就绪后再调免登
+    h5sdk.ready(() => requestAccess());
+  } else if (tt) {
+    // SDK 已注入
+    requestAccess();
+  } else {
+    // 兼容旧版：监听 ttready 事件
+    const onReady = () => {
+      document.removeEventListener('ttready', onReady);
+      requestAccess();
+    };
+    document.addEventListener('ttready', onReady);
+  }
+}
+
 onMounted(() => {
-  if (auth.token) router.push('/projects');
-  else requestAccess();
+  if (auth.token) {
+    router.push('/projects');
+    return;
+  }
+  startLogin();
+  // 兜底：若 SDK 始终未注入（说明不在飞书客户端内），给出提示
+  setTimeout(() => {
+    if (!getTT() && !(window as any).h5sdk) {
+      failed.value = true;
+      status.value = '当前环境不支持免登，请在飞书客户端内打开应用（浏览器访问请接入网页授权 OAuth）';
+    }
+  }, 3000);
 });
 </script>
 
