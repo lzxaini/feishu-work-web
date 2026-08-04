@@ -7,10 +7,13 @@
  * @Description: Fuck Bug
  * 微信：lizx2066
  */
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
 import { ReportService } from './report.service';
 import { CreateReportDto, UpdateReportDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, JwtUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('reports')
@@ -27,6 +30,18 @@ export class ReportController {
   @Get('quota')
   quota(@Query('reportDate') reportDate: string, @CurrentUser() user: JwtUser) {
     return this.reportService.getQuota(reportDate, user);
+  }
+
+  /** 导出全部报工记录（仅管理员，支持日期区间过滤） */
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Get('export')
+  async exportAll(@Query() query: any, @Res() res: Response) {
+    const buffer = await this.reportService.exportAll(query);
+    const date = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=report_${date}.xlsx`);
+    res.send(buffer);
   }
 
   @Get(':id')

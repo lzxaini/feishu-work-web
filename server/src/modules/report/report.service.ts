@@ -9,6 +9,7 @@
  */
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as XLSX from 'xlsx';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalendarService } from '../calendar/calendar.service';
 import { ProjectService } from '../project/project.service';
@@ -66,7 +67,18 @@ export class ReportService {
     if (query.projectId) where.projectId = Number(query.projectId);
     if (query.status) where.status = Number(query.status);
     if (query.userOpenId) where.userOpenId = query.userOpenId;
-    if (query.reportDate) where.reportDate = new Date(query.reportDate);
+    if (query.startDate || query.endDate) {
+      const range: any = {};
+      if (query.startDate) range.gte = new Date(query.startDate);
+      if (query.endDate) {
+        const end = new Date(query.endDate);
+        end.setDate(end.getDate() + 1); // 下一天 00:00，用 lt 排除时区偏移
+        range.lt = end;
+      }
+      where.reportDate = range;
+    } else if (query.reportDate) {
+      where.reportDate = new Date(query.reportDate);
+    }
     if (!user.isAdmin && !query.userOpenId) where.userOpenId = user.openId;
 
     const page = Number(query.page) || 1;
@@ -287,5 +299,47 @@ export class ReportService {
       _sum: { normalHours: true },
     });
     return Number(agg._sum.normalHours || 0);
+  }
+
+  /** 导出报工记录（管理员）为 Excel buffer，支持日期区间过滤 */
+  async exportAll(query: any = {}): Promise<Buffer> {
+    const where: any = { deleted: 0 };
+    if (query.startDate || query.endDate) {
+      const range: any = {};
+      if (query.startDate) range.gte = new Date(query.startDate);
+      if (query.endDate) {
+        const end = new Date(query.endDate);
+        end.setDate(end.getDate() + 1); // 下一天 00:00，用 lt 排除时区偏移
+        range.lt = end;
+      }
+      where.reportDate = range;
+    }
+    const items = await this.prisma.workReport.findMany({
+      where,
+      include: { project: true },
+      orderBy: [{ reportDate: 'desc' }, { id: 'desc' }],
+      take: 10000,
+    });
+    const rows = items.map((r) => ({
+      项目: r.project?.name || '',
+      报工日期: r.reportDate.toISOString().slice(0, 10),
+      '普通时长(小时)': Number(r.normalHours),
+      '加班时长(小时)': Number(r.overtimeHours),
+      '总时长(小时)': Number(r.totalHours),
+      类型: r.isHoliday ? '节假日' : '工作日',
+      状态: this.statusText(r.status),
+      报工人: r.userName || r.userOpenId,
+      备注: r.remark || '',
+      驳回原因: r.rejectReason || '',
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 24 }, { wch: 24 }];
+    XLSX.utils.book_append_sheet(wb, ws, '报工记录');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+  }
+
+  private statusText(s: number) {
+    return ({ 1: '审批中', 2: '已通过', 3: '已驳回', 4: '已撤销' } as Record<number, string>)[s] || String(s);
   }
 }

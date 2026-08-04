@@ -18,6 +18,7 @@
         </div>
         <div class="overview-actions">
           <t-button variant="text" theme="default" class="back-btn" @click="router.push('/')">← 返回首页</t-button>
+          <t-button v-if="auth.isAdmin" theme="default" variant="outline" :loading="exporting" @click="doExport">导出 Excel</t-button>
           <t-button theme="primary" shape="round" @click="router.push('/reports/new')">+ 报工</t-button>
         </div>
       </div>
@@ -50,7 +51,8 @@
         <t-select v-model="filters.status" placeholder="状态" clearable style="width: 130px" @change="load">
           <t-option v-for="o in statusOptions" :key="o.value" :value="o.value" :label="o.label" />
         </t-select>
-        <t-date-picker v-model="filters.reportDate" format="YYYY-MM-DD" placeholder="报工日期" clearable style="width: 160px" @change="load" />
+        <t-date-picker v-model="filters.startDate" format="YYYY-MM-DD" placeholder="开始日期" clearable style="width: 150px" @change="load" />
+        <t-date-picker v-model="filters.endDate" format="YYYY-MM-DD" placeholder="结束日期" clearable style="width: 150px" @change="load" />
         <t-button theme="primary" @click="load">查询</t-button>
         <t-button theme="default" variant="outline" @click="resetFilters">重置</t-button>
       </div>
@@ -106,10 +108,13 @@
 import { computed, h, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Button, Tag, MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
-import { getReports, deleteReport } from '../api/report';
+import { getReports, deleteReport, exportReports } from '../api/report';
 import { getProjects } from '../api/project';
+import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
+const auth = useAuthStore();
+const exporting = ref(false);
 const rows = ref<any[]>([]);
 const total = ref(0);
 const page = ref(1);
@@ -222,6 +227,28 @@ function setStatusFilter(v: number) {
 
 function goProject(pid: any) {
   if (pid) router.push({ name: 'project-detail', params: { id: pid } });
+}
+
+async function doExport() {
+  exporting.value = true;
+  try {
+    const blob = await exportReports({
+      startDate: filters.value.startDate || undefined,
+      endDate: filters.value.endDate || undefined,
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const range = filters.value.startDate || filters.value.endDate ? `_${filters.value.startDate || ''}~${filters.value.endDate || ''}` : '';
+    a.href = url;
+    a.download = `报工记录${range}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    MessagePlugin.success('已导出');
+  } catch (e: any) {
+    MessagePlugin.error('导出失败：' + (e?.message || '未知错误'));
+  } finally {
+    exporting.value = false;
+  }
 }
 
 function edit(_row: any) {
