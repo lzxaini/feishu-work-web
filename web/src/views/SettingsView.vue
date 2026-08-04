@@ -70,7 +70,7 @@ const adminColumns = [
     colKey: 'action',
     title: '操作',
     width: 90,
-    cell: ({ row }: any) => h(Button, { theme: 'danger', variant: 'text', onClick: () => removeAdmin(row) }, { default: () => '移除' }),
+    cell: (h: any, { row }: any) => h(Button, { theme: 'danger', variant: 'text', onClick: () => removeAdmin(row) }, { default: () => '移除' }),
   },
 ];
 

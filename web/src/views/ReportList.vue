@@ -58,23 +58,23 @@ function statusText(s: number) {
 
 const columns = [
   { colKey: 'project.name', title: '项目', minWidth: 140, ellipsis: true },
-  { colKey: 'reportDate', title: '日期', width: 110, cell: ({ row }: any) => String(row.reportDate).slice(0, 10) },
-  { colKey: 'hours', title: '普通/加班', width: 110, cell: ({ row }: any) => `${row.normalHours} / ${row.overtimeHours} h` },
+  { colKey: 'reportDate', title: '日期', width: 110, cell: (h: any, { row }: any) => String(row.reportDate).slice(0, 10) },
+  { colKey: 'hours', title: '普通/加班', width: 110, cell: (h: any, { row }: any) => `${row.normalHours} / ${row.overtimeHours} h` },
   { colKey: 'totalHours', title: '总时长', width: 90 },
   {
     colKey: 'isHoliday',
     title: '类型',
     width: 90,
-    cell: ({ row }: any) => h(Tag, { theme: row.isHoliday ? 'warning' : 'success', size: 'small', variant: 'light' }, { default: () => (row.isHoliday ? '节假日' : '工作日') }),
+    cell: (h: any, { row }: any) => h(Tag, { theme: row.isHoliday ? 'warning' : 'success', size: 'small', variant: 'light' }, { default: () => (row.isHoliday ? '节假日' : '工作日') }),
   },
-  { colKey: 'status', title: '状态', width: 90, cell: ({ row }: any) => statusText(row.status) },
+  { colKey: 'status', title: '状态', width: 90, cell: (h: any, { row }: any) => statusText(row.status) },
   { colKey: 'userName', title: '报工人', width: 100 },
   {
     colKey: 'action',
     title: '操作',
     width: 150,
     fixed: 'right',
-    cell: ({ row }: any) =>
+    cell: (h: any, { row }: any) =>
       h('div', { style: 'display:flex;gap:4px;align-items:center' }, [
         row.status === 1 ? h(Button, { theme: 'primary', variant: 'text', onClick: () => edit(row) }, { default: () => '编辑' }) : null,
         row.status !== 2 ? h(Button, { theme: 'danger', variant: 'text', onClick: () => remove(row) }, { default: () => '撤销' }) : null,

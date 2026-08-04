@@ -33,15 +33,15 @@ function dayTypeText(t: number) {
 }
 
 const columns = [
-  { colKey: 'calDate', title: '日期', width: 150, cell: ({ row }: any) => String(row.calDate).slice(0, 10) },
+  { colKey: 'calDate', title: '日期', width: 150, cell: (h: any, { row }: any) => String(row.calDate).slice(0, 10) },
   {
     colKey: 'dayType',
     title: '类型',
     width: 130,
-    cell: ({ row }: any) => h(Tag, { theme: row.dayType === 1 ? 'danger' : 'success', size: 'small', variant: 'light' }, { default: () => dayTypeText(row.dayType) }),
+    cell: (h: any, { row }: any) => h(Tag, { theme: row.dayType === 1 ? 'danger' : 'success', size: 'small', variant: 'light' }, { default: () => dayTypeText(row.dayType) }),
   },
   { colKey: 'name', title: '名称' },
-  { colKey: 'action', title: '操作', width: 90, cell: ({ row }: any) => h(Button, { theme: 'danger', variant: 'text', onClick: () => remove(row) }, { default: () => '删除' }) },
+  { colKey: 'action', title: '操作', width: 90, cell: (h: any, { row }: any) => h(Button, { theme: 'danger', variant: 'text', onClick: () => remove(row) }, { default: () => '删除' }) },
 ];
 
 async function load() {
