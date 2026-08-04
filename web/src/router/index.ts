@@ -31,11 +31,11 @@ const router = createRouter({
   ],
 });
 
-// 登录守卫：未登录跳转登录页
+// 登录守卫：未登录跳转登录页（保留 query，供 OAuth 回调携带 code 使用）
 router.beforeEach((to) => {
   const auth = useAuthStore();
   if (to.name !== 'login' && !auth.token) {
-    return { name: 'login' };
+    return { name: 'login', query: to.query };
   }
   return true;
 });

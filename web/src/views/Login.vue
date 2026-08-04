@@ -13,7 +13,7 @@
       <div class="brand-logo">📋</div>
       <h1 class="login-title">飞书报工系统</h1>
       <p class="status">{{ status }}</p>
-      <t-button v-if="failed" theme="primary" shape="round" size="large" @click="requestAccess">
+      <t-button v-if="failed" theme="primary" shape="round" size="large" @click="retry">
         重新登录
       </t-button>
     </div>
@@ -27,36 +27,82 @@ import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
 const auth = useAuthStore();
-const status = ref('正在飞书免登中…');
+const status = ref('正在登录…');
 const failed = ref(false);
 
-// 飞书 JSSDK 是异步注入的：不能在 setup 顶层同步读 window.tt（此时必为 undefined）
-// 需等 window.h5sdk.ready / ttready 事件触发后，window.tt 才可用
+// ---------- 环境判断 ----------
+// 飞书 JSSDK 是异步注入的：不能同步读 window.tt，需结合 UA 判断环境
 function getTT() {
   return (window as any).tt;
 }
 
+function isFeishuEnv() {
+  if (/lark|feishu/i.test(navigator.userAgent)) return true;
+  if ((window as any).h5sdk || getTT()) return true;
+  return false;
+}
+
+// ---------- 登录核心 ----------
 function loginWithCode(code: string) {
   auth
     .loginByCode(code)
-    .then(() => router.push('/projects'))
+    .then(() => router.push('/'))
     .catch((e: any) => {
       failed.value = true;
       status.value = '登录失败：' + (e?.message || '未知错误');
     });
 }
 
+// ---------- 浏览器网页授权 OAuth ----------
+// 流程：跳转飞书授权页 → 用户授权 → 跳回本页带 code → 复用 /auth/feishu/login
+function startOAuth() {
+  const appId = import.meta.env.VITE_FEISHU_APP_ID;
+  if (!appId) {
+    failed.value = true;
+    status.value = '缺少 VITE_FEISHU_APP_ID 配置';
+    return;
+  }
+  // redirect_uri 用当前域名（与飞书后台重定向 URL 精确匹配），不带路径
+  const redirectUri = window.location.origin;
+  const state = Math.random().toString(36).slice(2);
+  localStorage.setItem('oauth_state', state);
+  window.location.href =
+    'https://accounts.feishu.cn/open-apis/authen/v1/authorize' +
+    `?client_id=${encodeURIComponent(appId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    '&response_type=code' +
+    `&state=${state}`;
+}
+
+function handleOAuthCallback(code: string, state: string | null) {
+  const saved = localStorage.getItem('oauth_state');
+  localStorage.removeItem('oauth_state');
+  if (saved && state && state === saved) {
+    loginWithCode(code);
+  } else {
+    // state 不匹配（如手动访问/过期），仍尝试登录；失败会给提示
+    loginWithCode(code);
+  }
+}
+
+// ---------- 飞书客户端内免登 ----------
 function requestAuthCode() {
   const tt = getTT();
   if (!tt?.requestAuthCode) {
     failed.value = true;
-    status.value = '当前环境不支持免登，请在飞书客户端内打开应用（浏览器访问请接入网页授权 OAuth）';
+    status.value = '当前环境不支持免登，正在跳转网页授权…';
+    startOAuth();
     return;
   }
   tt.requestAuthCode({
     appId: import.meta.env.VITE_FEISHU_APP_ID,
     success: (res: any) => loginWithCode(res.code),
     fail: (err: any) => {
+      // 桌面端/浏览器被判定 h5 场景时，降级走网页授权
+      if (err?.errno === 20029) {
+        startOAuth();
+        return;
+      }
       failed.value = true;
       status.value = '免登失败：' + (err?.errString || '未知错误');
     },
@@ -72,11 +118,17 @@ function requestAccess() {
       scopeList: [],
       success: (res: any) => loginWithCode(res.code),
       fail: (err: any) => {
-        if (err?.errno === 103) requestAuthCode();
-        else {
-          failed.value = true;
-          status.value = '免登失败：' + (err?.errString || '未知错误');
+        if (err?.errno === 103) {
+          requestAuthCode();
+          return;
         }
+        if (err?.errno === 20029) {
+          // h5 case（桌面端常见）：降级走网页授权
+          startOAuth();
+          return;
+        }
+        failed.value = true;
+        status.value = '免登失败：' + (err?.errString || '未知错误');
       },
     });
   } else {
@@ -103,19 +155,35 @@ function startLogin() {
   }
 }
 
+// 重新登录：客户端内重试免登，浏览器重新发起授权
+function retry() {
+  if (isFeishuEnv()) requestAccess();
+  else startOAuth();
+}
+
 onMounted(() => {
   if (auth.token) {
-    router.push('/projects');
+    router.push('/');
     return;
   }
+
+  // 1) OAuth 授权回调（浏览器跳回，URL 带 code）
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    handleOAuthCallback(code, params.get('state'));
+    return;
+  }
+
+  // 2) 浏览器直接访问 → 网页授权
+  if (!isFeishuEnv()) {
+    startOAuth();
+    return;
+  }
+
+  // 3) 飞书客户端内 → 免登
+  status.value = '正在飞书免登中…';
   startLogin();
-  // 兜底：若 SDK 始终未注入（说明不在飞书客户端内），给出提示
-  setTimeout(() => {
-    if (!getTT() && !(window as any).h5sdk) {
-      failed.value = true;
-      status.value = '当前环境不支持免登，请在飞书客户端内打开应用（浏览器访问请接入网页授权 OAuth）';
-    }
-  }, 3000);
 });
 </script>
 
