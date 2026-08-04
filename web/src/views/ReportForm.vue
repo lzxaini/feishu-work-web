@@ -29,7 +29,7 @@
           <t-date-picker
             v-model="form.reportDate"
             format="YYYY-MM-DD"
-            :disabled-date="(d: Date) => d.getTime() > Date.now()"
+            :disable-date="(d: any) => new Date(d).getTime() > Date.now()"
             placeholder="选择日期"
             style="width: 100%"
             @change="checkHoliday"
@@ -87,7 +87,13 @@ const saving = ref(false);
 const projects = ref<any[]>([]);
 const holiday = ref<boolean | null>(null);
 const quota = ref<any>({ limit: 8, used: 0, remaining: 8 });
-const form = ref<any>({ projectId: undefined, reportDate: '', normalHours: 0, overtimeHours: 0, remark: '' });
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const form = ref<any>({ projectId: undefined, reportDate: todayStr(), normalHours: 0, overtimeHours: 0, remark: '' });
 
 async function loadQuota() {
   if (!form.value.reportDate) {
@@ -124,6 +130,8 @@ async function save() {
 onMounted(async () => {
   const res = await getProjects({ pageSize: 100 });
   projects.value = res.items.filter((p: any) => p.status === 1);
+  // 默认今天：加载当天节假日提示与普通时长额度
+  if (form.value.reportDate) await checkHoliday(form.value.reportDate);
 });
 </script>
 
