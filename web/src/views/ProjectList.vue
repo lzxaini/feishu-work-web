@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:32
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-04 17:05:53
+ * @LastEditTime: 2026-08-04 17:09:46
  * @FilePath: \feishu-work-web\web\src\views\ProjectList.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -227,7 +227,7 @@ const columns = [
     cell: (h: any, { row }: any) =>
       h('div', { style: 'display:flex;gap:4px;align-items:center' }, [
         h(Button, { theme: 'primary', variant: 'text', onClick: () => router.push({ name: 'project-detail', params: { id: row?.id } }) }, { default: () => '详情' }),
-        h(Button, { theme: 'primary', variant: 'text', onClick: () => router.push({ name: 'project-edit', params: { id: row?.id } }) }, { default: () => '编辑' }),
+        auth.isAdmin ? h(Button, { theme: 'primary', variant: 'text', onClick: () => router.push({ name: 'project-edit', params: { id: row?.id } }) }, { default: () => '编辑' }) : null,
         auth.isAdmin ? h(Button, { theme: 'danger', variant: 'text', onClick: () => remove(row) }, { default: () => '删除' }) : null,
       ]),
   },
