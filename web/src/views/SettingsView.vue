@@ -8,18 +8,61 @@
  * 微信：lizx2066
 -->
 <template>
-  <div>
-    <div class="surface-card" style="margin-bottom: 16px">
-      <h1 class="page-title">系统设置</h1>
-      <p class="section-title">飞书通讯录</p>
-      <div class="toolbar">
-        <t-button theme="primary" shape="round" :loading="syncing" @click="doSync">同步飞书通讯录</t-button>
-        <span class="tip">用户不建表，从飞书通讯录拉取缓存，用于选择负责人/报工人</span>
+  <div class="settings-page">
+    <div class="surface-card overview-card">
+      <div class="overview-top">
+        <div>
+          <p class="overview-kicker">SYSTEM SETTINGS</p>
+          <h1 class="page-title">系统设置</h1>
+          <p class="overview-sub">管理飞书通讯录、全局管理员与报工规则</p>
+        </div>
+        <div class="overview-actions">
+          <t-button variant="text" theme="default" class="back-btn" @click="router.push('/')">← 返回首页</t-button>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <div class="metric-label">管理员</div>
+          <div class="metric-value">{{ admins.length }}</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">普通时长上限</div>
+          <div class="metric-value">{{ hoursLimit }}<span class="metric-unit">h</span></div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">通讯录</div>
+          <div class="metric-value">飞书</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">审批方式</div>
+          <div class="metric-value">系统内</div>
+        </div>
       </div>
     </div>
 
-    <div class="surface-card">
-      <p class="section-title">全局管理员</p>
+    <div class="surface-card section-card">
+      <div class="card-head">
+        <div class="card-icon">👥</div>
+        <div>
+          <div class="card-title">飞书通讯录</div>
+          <div class="card-desc">用户不建表，从飞书通讯录拉取缓存，用于选择负责人/报工人</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <t-button theme="primary" shape="round" :loading="syncing" @click="doSync">同步飞书通讯录</t-button>
+        <span v-if="lastSyncText" class="tip">上次同步：{{ lastSyncText }}</span>
+      </div>
+    </div>
+
+    <div class="surface-card section-card">
+      <div class="card-head">
+        <div class="card-icon">🛡️</div>
+        <div>
+          <div class="card-title">全局管理员</div>
+          <div class="card-desc">管理员可管理项目、报工与系统配置</div>
+        </div>
+      </div>
       <div class="toolbar">
         <t-select
           v-model="newAdminOpenId"
@@ -32,14 +75,24 @@
         />
         <t-button theme="primary" shape="round" @click="addAdmin">添加管理员</t-button>
       </div>
-      <t-table :data="admins" :columns="adminColumns" row-key="id" hover />
+      <div class="table-wrap">
+        <t-table :data="admins" :columns="adminColumns" row-key="id" hover />
+      </div>
     </div>
 
-    <div class="surface-card" style="margin-top: 16px">
-      <p class="section-title">报工配置</p>
+    <div class="surface-card section-card">
+      <div class="card-head">
+        <div class="card-icon">⚙️</div>
+        <div>
+          <div class="card-title">报工配置</div>
+          <div class="card-desc">普通报工时长由系统按剩余额度自动计算，此值为每日上限</div>
+        </div>
+      </div>
       <div class="toolbar">
-        <t-input-number v-model="hoursLimit" :min="1" :max="24" :step="1" style="width: 160px" />
-        <span class="tip">工作日普通时长每日上限（小时），默认 8；普通报工时长由系统按剩余额度自动计算</span>
+        <div class="config-item">
+          <span class="config-label">工作日普通时长上限</span>
+          <t-input-number v-model="hoursLimit" :min="1" :max="24" :step="1" style="width: 140px" />
+        </div>
         <t-button theme="primary" shape="round" :loading="savingConfig" @click="saveConfig">保存</t-button>
       </div>
     </div>
@@ -48,10 +101,12 @@
 
 <script setup lang="ts">
 import { h, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { Button, MessagePlugin } from 'tdesign-vue-next';
 import { getAdminList, addAdmin as apiAddAdmin, removeAdmin as apiRemoveAdmin, syncUsers, getConfig, setConfig } from '../api/admin';
 import { getUsers } from '../api/project';
 
+const router = useRouter();
 const syncing = ref(false);
 const searching = ref(false);
 const savingConfig = ref(false);
@@ -59,6 +114,7 @@ const admins = ref<any[]>([]);
 const userOptions = ref<{ label: string; value: string }[]>([]);
 const newAdminOpenId = ref('');
 const hoursLimit = ref(8);
+const lastSyncText = ref('');
 
 async function searchUsers(keyword: string) {
   searching.value = true;
@@ -89,6 +145,7 @@ async function doSync() {
   syncing.value = true;
   try {
     const res = await syncUsers();
+    lastSyncText.value = new Date().toLocaleString('zh-CN');
     MessagePlugin.success(`同步完成，共 ${res.count} 人`);
   } finally {
     syncing.value = false;
@@ -132,10 +189,168 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.section-title {
-  font-size: 17px;
+.settings-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.overview-card {
+  background: linear-gradient(145deg, #ffffff 0%, #f2f2f7 100%);
+  border-color: #e3e3ea;
+  overflow: hidden;
+}
+
+.overview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.overview-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #6e6e73;
+}
+
+.overview-sub {
+  margin: 6px 0 0;
+  color: #6e6e73;
+  font-size: 14px;
+}
+
+.overview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-btn {
+  margin-left: -8px;
+}
+
+.page-title {
+  font-size: 28px;
   font-weight: 600;
-  margin: 0 0 12px;
+  letter-spacing: -0.02em;
   color: #1d1d1f;
+  margin: 0;
+}
+
+.metrics-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metric-item {
+  background: #ffffff;
+  border: 1px solid #e8e8ed;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #6e6e73;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1d1d1f;
+}
+
+.metric-unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+  margin-left: 2px;
+}
+
+.section-card {
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #f5f5f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.card-desc {
+  font-size: 12px;
+  color: #86868b;
+  margin-top: 2px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.config-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.config-label {
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+.table-wrap {
+  margin-top: 6px;
+  overflow-x: auto;
+}
+
+@media (max-width: 720px) {
+  .overview-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .overview-actions {
+    justify-content: space-between;
+  }
+  .page-title {
+    font-size: 22px;
+  }
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .config-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style>
