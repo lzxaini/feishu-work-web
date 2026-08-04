@@ -34,20 +34,31 @@
       </div>
       <t-table :data="admins" :columns="adminColumns" row-key="id" hover />
     </div>
+
+    <div class="surface-card" style="margin-top: 16px">
+      <p class="section-title">报工配置</p>
+      <div class="toolbar">
+        <t-input-number v-model="hoursLimit" :min="1" :max="24" :step="1" style="width: 160px" />
+        <span class="tip">工作日普通时长每日上限（小时），默认 8；普通报工时长由系统按剩余额度自动计算</span>
+        <t-button theme="primary" shape="round" :loading="savingConfig" @click="saveConfig">保存</t-button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { h, onMounted, ref } from 'vue';
 import { Button, MessagePlugin } from 'tdesign-vue-next';
-import { getAdminList, addAdmin as apiAddAdmin, removeAdmin as apiRemoveAdmin, syncUsers } from '../api/admin';
+import { getAdminList, addAdmin as apiAddAdmin, removeAdmin as apiRemoveAdmin, syncUsers, getConfig, setConfig } from '../api/admin';
 import { getUsers } from '../api/project';
 
 const syncing = ref(false);
 const searching = ref(false);
+const savingConfig = ref(false);
 const admins = ref<any[]>([]);
 const userOptions = ref<{ label: string; value: string }[]>([]);
 const newAdminOpenId = ref('');
+const hoursLimit = ref(8);
 
 async function searchUsers(keyword: string) {
   searching.value = true;
@@ -98,9 +109,25 @@ async function removeAdmin(row: any) {
   loadAdmins();
 }
 
+async function loadConfig() {
+  const cfg = await getConfig();
+  if (cfg.working_hours_limit) hoursLimit.value = Number(cfg.working_hours_limit);
+}
+
+async function saveConfig() {
+  savingConfig.value = true;
+  try {
+    await setConfig('working_hours_limit', String(hoursLimit.value));
+    MessagePlugin.success('已保存');
+  } finally {
+    savingConfig.value = false;
+  }
+}
+
 onMounted(() => {
   searchUsers('');
   loadAdmins();
+  loadConfig();
 });
 </script>
 

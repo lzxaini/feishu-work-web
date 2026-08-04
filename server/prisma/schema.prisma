@@ -83,7 +83,7 @@ model WorkReport {
   project  Project              @relation(fields: [projectId], references: [id])
   approval WorkReportApproval?
 
-  @@unique([userOpenId, projectId, reportDate]) // 同人同项目同日唯一
+  // 允许多次报工：不再限制「同人同项目同日唯一」（普通时长按天累计由业务层控制）
   @@index([projectId])
   @@index([userOpenId, reportDate])
   @@index([status])

@@ -66,12 +66,21 @@ export class FeishuService {
   /** 通用请求（默认带 tenant token；可传入 token 覆盖，如 user_access_token） */
   async request(method: 'get' | 'post', path: string, body?: unknown, token?: string): Promise<any> {
     const tk = token || (await this.getTenantToken());
-    const res = await this.http.request({
-      method,
-      url: path,
-      data: body,
-      headers: { Authorization: `Bearer ${tk}`, 'Content-Type': 'application/json; charset=utf-8' },
-    });
+    let res;
+    try {
+      res = await this.http.request({
+        method,
+        url: path,
+        data: body,
+        headers: { Authorization: `Bearer ${tk}`, 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    } catch (err: any) {
+      // HTTP 层错误（如 400/401/403），飞书返回的 body 里有具体业务错误，记录便于排查
+      const detail = err?.response?.data ? JSON.stringify(err.response.data) : err.message;
+      this.logger.error(`飞书 API ${method.toUpperCase()} ${path} HTTP 失败: ${detail}`);
+      const msg = err?.response?.data?.msg || err?.response?.data?.message || err.message;
+      throw new Error(`飞书 API 请求失败: ${msg}`);
+    }
     if (res.data.code !== 0) {
       this.logger.warn(`飞书 API ${method.toUpperCase()} ${path} 失败: ${JSON.stringify(res.data)}`);
       throw new Error(`飞书 API 失败: ${res.data.msg || res.data.code}`);

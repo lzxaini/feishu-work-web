@@ -7,7 +7,7 @@
  * @Description: Fuck Bug
  * 微信：lizx2066
  */
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CalendarService } from '../calendar/calendar.service';
@@ -28,6 +28,8 @@ import { JwtUser } from '../../common/decorators/current-user.decorator';
  */
 @Injectable()
 export class ReportService {
+  private readonly logger = new Logger(ReportService.name);
+
   constructor(
     private prisma: PrismaService,
     private calendar: CalendarService,
@@ -37,7 +39,10 @@ export class ReportService {
     private config: ConfigService,
   ) {}
 
-  private getHoursLimit(): number {
+  private async getHoursLimit(): Promise<number> {
+    // 允许配置：SystemConfig 表优先（管理员可在系统设置中修改），其次 .env，最后默认 8
+    const cfg = await this.prisma.systemConfig.findUnique({ where: { configKey: 'working_hours_limit' } });
+    if (cfg?.configValue && Number(cfg.configValue) > 0) return Number(cfg.configValue);
     return Number(this.config.get('WORKING_HOURS_LIMIT') || DEFAULT_WORKING_HOURS_LIMIT);
   }
 
@@ -94,24 +99,23 @@ export class ReportService {
     const project = await this.requireProjectActive(dto.projectId);
     const reportDate = new Date(dto.reportDate);
     const isHoliday = await this.calendar.isHoliday(reportDate);
-    const limit = this.getHoursLimit();
+    const limit = await this.getHoursLimit();
     const normal = dto.normalHours ?? 0;
     const overtime = dto.overtimeHours ?? 0;
     const total = normal + overtime;
     if (total <= 0) throw new BadRequestException('总时长必须大于 0');
 
-    // 需求4：工作日普通时长不超过 8h
-    if (!isHoliday && normal > limit) {
-      throw new BadRequestException(`工作日普通时长不能超过 ${limit} 小时，超出部分请填写「加班时长」走审批`);
+    // 工作日普通时长：当天累计不能超过 limit（允许多次报工，剩余额度由系统自动计算）
+    if (!isHoliday && normal > 0) {
+      const used = await this.getUsedNormal(dto.reportDate, user.openId);
+      if (used + normal > limit) {
+        throw new BadRequestException(
+          `今日普通时长已达上限（已报 ${used} 小时 / 上限 ${limit} 小时），普通报工最多还能报 ${Math.max(0, limit - used)} 小时`,
+        );
+      }
     }
     // 需求5/6：加班>0 或 节假日 → 需审批
     const needApproval = isHoliday || overtime > 0;
-
-    // 同人同项目同日唯一
-    const dup = await this.prisma.workReport.findFirst({
-      where: { userOpenId: user.openId, projectId: dto.projectId, reportDate, deleted: 0 },
-    });
-    if (dup) throw new BadRequestException('同一项目同日已报工，请勿重复提交');
 
     const report = await this.prisma.workReport.create({
       data: {
@@ -142,18 +146,25 @@ export class ReportService {
     const approverOpenIds = await this.projectService.getOwnerOpenIds(report.projectId);
     const approvalCode = this.getApprovalCode();
 
-    const instance = await this.feishuApproval.createInstance({
-      approvalCode,
-      openId: report.userOpenId,
-      form: [
-        { name: '项目', value: project?.name || '' },
-        { name: '报工日期', value: report.reportDate.toISOString().slice(0, 10) },
-        { name: '普通时长', value: String(Number(report.normalHours)) },
-        { name: '加班时长', value: String(Number(report.overtimeHours)) },
-        { name: '备注', value: report.remark || '' },
-      ],
-      approverOpenIds: approverOpenIds.length ? approverOpenIds : [report.userOpenId],
-    });
+    // 飞书审批创建失败不阻断报工提交：报工保持「审批中」，记录错误便于排查（可在配置修复后处理）
+    let instance: any = null;
+    try {
+      instance = await this.feishuApproval.createInstance({
+        approvalCode,
+        openId: report.userOpenId,
+        form: [
+          { name: '项目', value: project?.name || '' },
+          { name: '报工日期', value: report.reportDate.toISOString().slice(0, 10) },
+          { name: '普通时长', value: String(Number(report.normalHours)) },
+          { name: '加班时长', value: String(Number(report.overtimeHours)) },
+          { name: '备注', value: report.remark || '' },
+        ],
+        approverOpenIds: approverOpenIds.length ? approverOpenIds : [report.userOpenId],
+      });
+    } catch (err: any) {
+      this.logger.error(`创建飞书审批失败（报工 ${report.id}）: ${err?.message}`, err?.stack);
+      return;
+    }
 
     await this.prisma.workReport.update({
       where: { id: report.id },
@@ -251,5 +262,29 @@ export class ReportService {
     if (!project) throw new NotFoundException('项目不存在');
     if (project.status !== 1) throw new BadRequestException('该项目不在进行中，无法报工');
     return project;
+  }
+
+  /** 当日普通时长额度查询（前端用于自动计算普通报工时长） */
+  async getQuota(reportDate: string, user: JwtUser) {
+    const limit = await this.getHoursLimit();
+    const used = await this.getUsedNormal(reportDate, user.openId);
+    return { limit, used, remaining: Math.max(0, limit - used) };
+  }
+
+  /** 统计某日该用户已报的普通时长合计（排除已撤销/删除） */
+  private async getUsedNormal(reportDate: string, openId: string): Promise<number> {
+    const start = new Date(reportDate);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const agg = await this.prisma.workReport.aggregate({
+      where: {
+        userOpenId: openId,
+        reportDate: { gte: start, lt: end },
+        deleted: 0,
+        status: { not: REPORT_STATUS.CANCELLED },
+      },
+      _sum: { normalHours: true },
+    });
+    return Number(agg._sum.normalHours || 0);
   }
 }

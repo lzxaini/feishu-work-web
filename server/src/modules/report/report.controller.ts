@@ -23,6 +23,12 @@ export class ReportController {
     return this.reportService.list(query, user);
   }
 
+  /** 当日普通时长额度（自动计算剩余可报普通工时） */
+  @Get('quota')
+  quota(@Query('reportDate') reportDate: string, @CurrentUser() user: JwtUser) {
+    return this.reportService.getQuota(reportDate, user);
+  }
+
   @Get(':id')
   detail(@Param('id', ParseIntPipe) id: number) {
     return this.reportService.detail(id);
