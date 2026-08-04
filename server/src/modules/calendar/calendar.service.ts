@@ -37,9 +37,18 @@ export class CalendarService {
     return day === 0 || day === 6; // 周末为节假日
   }
 
-  /** 规则列表 */
+  /** 规则列表（calDate 统一规范化为 YYYY-MM-DD 字符串，避免 MySQL DATE 列时区读回偏移显示错一天） */
   async listRules() {
-    return this.prisma.calendarRule.findMany({ orderBy: { calDate: 'asc' } });
+    const rules = await this.prisma.calendarRule.findMany({ orderBy: { calDate: 'asc' } });
+    return rules.map((r) => ({ ...r, calDate: this.formatDate(r.calDate) }));
+  }
+
+  /** 把 DB 读回的 Date 用本地时区格式化为 YYYY-MM-DD（本地时区与 MySQL 会话时区一致时可还原正确日期） */
+  private formatDate(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   /** 新增例外规则 */

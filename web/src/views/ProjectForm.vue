@@ -56,7 +56,8 @@ const editId = route.params.id ? Number(route.params.id) : null;
 const saving = ref(false);
 const searching = ref(false);
 const form = ref<any>({ name: '', code: '', description: '', ownerOpenIds: [] });
-const dateRange = ref<string[]>([]);
+// 范围选择器 value 需为长度为 2 的数组，不能是空数组 []
+const dateRange = ref<string[]>(['', '']);
 const userOptions = ref<{ label: string; value: string }[]>([]);
 
 async function searchUsers(keyword: string) {
