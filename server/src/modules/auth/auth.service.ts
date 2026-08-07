@@ -7,7 +7,7 @@
  * @Description: Fuck Bug
  * 微信：lizx2066
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { FeishuAuthService } from '../../feishu/feishu-auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -20,11 +20,18 @@ export class AuthService {
     private prisma: PrismaService,
   ) {}
 
-  /** 端内免登登录：code → 用户身份 → 签发本系统 JWT */
+  /** 端内免登登录：code → 用户身份 → 签发本系统 JWT（仅启用用户或管理员可登录） */
   async login(code: string) {
     const userInfo = await this.feishuAuth.loginByCode(code);
     const admin = await this.prisma.admin.findUnique({ where: { openId: userInfo.open_id } });
     const isAdmin = !!admin;
+    // 非管理员且未启用系统 → 拒绝登录
+    if (!isAdmin) {
+      const cached = await this.prisma.feishuUserCache.findUnique({ where: { openId: userInfo.open_id } });
+      if (!cached || cached.systemEnabled !== 1) {
+        throw new ForbiddenException('账号未启用，请联系管理员开通');
+      }
+    }
     const payload = { sub: userInfo.open_id, name: userInfo.name, isAdmin };
     const token = this.jwt.sign(payload);
     return {

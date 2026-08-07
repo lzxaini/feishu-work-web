@@ -39,4 +39,12 @@ export class UserController {
   setHoliday(@Param('openId') openId: string, @Body() body: { enabled: boolean }) {
     return this.userService.setHolidayEnabled(openId, !!body.enabled);
   }
+
+  /** 设置用户是否启用系统（管理员） */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Put(':openId/enabled')
+  setEnabled(@Param('openId') openId: string, @Body() body: { enabled: boolean }) {
+    return this.userService.setEnabled(openId, !!body.enabled);
+  }
 }

@@ -145,6 +145,7 @@ import {
   getConfig,
   setConfig,
   setUserHolidayEnabled,
+  setUserEnabled,
 } from '../api/admin';
 import { getUsers } from '../api/project';
 import { syncCalendar } from '../api/calendar';
@@ -176,6 +177,17 @@ const userColumns = [
   { colKey: 'departmentName', title: '部门' },
   { colKey: 'mobile', title: '手机' },
   { colKey: 'email', title: '邮箱' },
+  {
+    colKey: 'systemEnabled',
+    title: '启用系统',
+    width: 100,
+    cell: (h: any, { row }: any) =>
+      h(Switch, {
+        value: row.systemEnabled === 1,
+        disabled: togglingIds.value.has(row.openId),
+        onChange: (v: any) => toggleEnabled(row, !!v),
+      }),
+  },
   {
     colKey: 'holidayReportEnabled',
     title: '允许节假日报工',
@@ -217,6 +229,20 @@ async function toggleHoliday(row: any, enabled: boolean) {
     await setUserHolidayEnabled(row.openId, enabled);
     row.holidayReportEnabled = enabled ? 1 : 0;
     MessagePlugin.success(`${row.name} 已${enabled ? '允许' : '禁止'}节假日报工`);
+  } catch (e) {
+    MessagePlugin.error('设置失败，请重试');
+  } finally {
+    togglingIds.value.delete(row.openId);
+  }
+}
+
+async function toggleEnabled(row: any, enabled: boolean) {
+  if (togglingIds.value.has(row.openId)) return;
+  togglingIds.value.add(row.openId);
+  try {
+    await setUserEnabled(row.openId, enabled);
+    row.systemEnabled = enabled ? 1 : 0;
+    MessagePlugin.success(`${row.name} 已${enabled ? '启用' : '禁用'}`);
   } catch (e) {
     MessagePlugin.error('设置失败，请重试');
   } finally {

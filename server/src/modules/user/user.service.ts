@@ -55,4 +55,14 @@ export class UserService {
       data: { holidayReportEnabled: enabled ? 1 : 0 },
     });
   }
+
+  /** 设置某用户是否启用系统（未启用无法登录使用） */
+  async setEnabled(openId: string, enabled: boolean) {
+    const user = await this.prisma.feishuUserCache.findUnique({ where: { openId } });
+    if (!user) throw new NotFoundException('用户不存在');
+    return this.prisma.feishuUserCache.update({
+      where: { openId },
+      data: { systemEnabled: enabled ? 1 : 0 },
+    });
+  }
 }

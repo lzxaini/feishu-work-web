@@ -18,3 +18,5 @@ export const setConfig = (configKey: string, configValue: string) =>
 export const syncUsers = () => request.post<any, any>('/users/sync');
 export const setUserHolidayEnabled = (openId: string, enabled: boolean) =>
   request.put<any, any>(`/users/${openId}/holiday`, { enabled });
+export const setUserEnabled = (openId: string, enabled: boolean) =>
+  request.put<any, any>(`/users/${openId}/enabled`, { enabled });
