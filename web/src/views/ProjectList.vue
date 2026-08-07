@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:32
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-04 17:09:46
+ * @LastEditTime: 2026-08-07 08:12:13
  * @FilePath: \feishu-work-web\web\src\views\ProjectList.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -179,7 +179,7 @@ const columns = [
     width: 64,
     cell: (h: any, { rowIndex }: any) => (page.value - 1) * pageSize + rowIndex + 1,
   },
-  { colKey: 'contractDate', title: '日期', width: 110, cell: (h: any, { row }: any) => dateText(row?.contractDate) },
+  { colKey: 'contractNo', title: '项目编号', minWidth: 130, cell: (h: any, { row }: any) => row?.contractNo || '-' },
   {
     colKey: 'name',
     title: '项目名称',
@@ -198,8 +198,7 @@ const columns = [
         { default: () => row?.name || '-' },
       ),
   },
-  { colKey: 'contractNo', title: '合同编号', width: 130, cell: (h: any, { row }: any) => row?.contractNo || '-' },
-  { colKey: 'contractAmount', title: '合同金额', width: 120, cell: (h: any, { row }: any) => moneyText(row?.contractAmount) },
+  // { colKey: 'contractAmount', title: '合同金额', width: 120, cell: (h: any, { row }: any) => moneyText(row?.contractAmount) },
   {
     colKey: 'members',
     title: '负责人',
@@ -219,6 +218,7 @@ const columns = [
     width: 90,
     cell: (h: any, { row }: any) => h(Tag, { theme: statusTheme(row?.status), size: 'small', variant: 'light' }, { default: () => statusText(row?.status) }),
   },
+  { colKey: 'startDate', title: '日期', minWidth: 100, cell: (h: any, { row }: any) => dateText(row?.startDate) },
   {
     colKey: 'action',
     title: '操作',

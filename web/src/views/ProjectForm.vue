@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:34
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-04 17:01:26
+ * @LastEditTime: 2026-08-07 08:09:19
  * @FilePath: \feishu-work-web\web\src\views\ProjectForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -31,7 +31,7 @@
       <!-- <t-form-item label="项目编号">
         <t-input v-model="form.code" placeholder="可选" />
       </t-form-item> -->
-      <t-form-item label="合同编号">
+      <t-form-item label="项目编号">
         <t-input v-model="form.contractNo" placeholder="可选" />
       </t-form-item>
 
@@ -53,19 +53,19 @@
       <t-form-item label="状态">
         <t-select v-model="form.status" :options="statusOptions" style="width: 100%" />
       </t-form-item>
-      <t-form-item label="申请专利">
+      <t-form-item label="申请专利" v-if="false">
         <t-radio-group v-model="form.patentApplied">
           <t-radio :value="1">是</t-radio>
           <t-radio :value="0">否</t-radio>
         </t-radio-group>
       </t-form-item>
 
-      <div class="form-section span-full">成本与文档</div>
+      <div class="form-section span-full" v-if="false">成本与文档</div>
 
-      <t-form-item label="合同金额">
+      <t-form-item label="合同金额" v-if="false">
         <t-input-number v-model="form.contractAmount" style="width: 100%" theme="normal" placeholder="可选" :min="0" />
       </t-form-item>
-      <t-form-item label="研发费用摊销">
+      <t-form-item label="研发费用摊销" v-if="false">
         <t-input-number v-model="form.rdCostAmortization" style="width: 100%" theme="normal" placeholder="可选" :min="0" />
       </t-form-item>
       <!-- <t-form-item label="研发项目书">
