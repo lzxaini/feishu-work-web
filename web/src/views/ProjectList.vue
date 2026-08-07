@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:32
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 09:49:57
+ * @LastEditTime: 2026-08-07 13:52:43
  * @FilePath: \feishu-work-web\web\src\views\ProjectList.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -60,6 +60,8 @@
         <t-button size="small" variant="outline" :theme="status === 1 ? 'primary' : 'default'" @click="setStatusFilter(1)">进行中</t-button>
         <t-button size="small" variant="outline" :theme="status === 2 ? 'primary' : 'default'" @click="setStatusFilter(2)">已完成</t-button>
         <t-button size="small" variant="outline" :theme="status === 3 ? 'primary' : 'default'" @click="setStatusFilter(3)">已取消</t-button>
+        <t-button size="small" variant="outline" :theme="status === 3 ? 'primary' : 'default'" @click="setStatusFilter(4)">已暂停</t-button>
+        <t-button size="small" variant="outline" :theme="status === 3 ? 'primary' : 'default'" @click="setStatusFilter(5)">已失败</t-button>
         <t-button size="small" variant="outline" :theme="priority === 1 ? 'primary' : 'default'" @click="setPriorityFilter(1)">紧急</t-button>
         <t-button size="small" variant="outline" :theme="priority === 2 ? 'primary' : 'default'" @click="setPriorityFilter(2)">优先</t-button>
         <t-button size="small" variant="outline" :theme="priority === 3 ? 'primary' : 'default'" @click="setPriorityFilter(3)">普通</t-button>
@@ -136,8 +138,8 @@ const statusOptions = [
   { value: 1, label: '进行中' },
   { value: 2, label: '已完成' },
   { value: 3, label: '已取消' },
-  { label: '已暂停', value: 4 },
-  { label: '已失败', value: 5 },
+  { value: 4, label: '已暂停' },
+  { value: 5, label: '已失败' },
 ];
 
 const priorityOptions = [
@@ -151,10 +153,10 @@ const completedCount = computed(() => rows.value.filter((i) => i.status === 2).l
 const urgentCount = computed(() => rows.value.filter((i) => i.priority === 1).length);
 
 function statusText(s: number) {
-  return ({ 1: '进行中', 2: '已完成', 3: '已取消' } as Record<number, string>)[s] || String(s);
+  return ({ 1: '进行中', 2: '已完成', 3: '已取消', 4: '已暂停', 5: '已失败' } as Record<number, string>)[s] || String(s);
 }
 function statusTheme(s: number): 'primary' | 'default' | 'success' | 'danger' | 'warning' {
-  return ({ 1: 'primary', 2: 'success', 3: 'danger' } as Record<number, 'primary' | 'default' | 'success' | 'danger' | 'warning'>)[s] || 'default';
+  return ({ 1: 'primary', 2: 'success', 3: 'danger', 4: 'warning', 5: 'danger' } as Record<number, 'primary' | 'default' | 'success' | 'danger' | 'warning'>)[s] || 'default';
 }
 function priorityText(p: number) {
   return ({ 1: '紧急', 2: '优先', 3: '普通' } as Record<number, string>)[p] || '普通';
