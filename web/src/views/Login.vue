@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:29
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-04 16:40:05
+ * @LastEditTime: 2026-08-07 08:46:52
  * @FilePath: \feishu-work-web\web\src\views\Login.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -35,7 +35,7 @@
       </t-button>
     </div>
 
-    <p class="login-footer">© 飞书报工系统</p>
+    <p class="login-footer">© 百士电子</p>
   </div>
 </template>
 
