@@ -18,9 +18,10 @@ export class UserService {
     private feishuAuth: FeishuAuthService,
   ) {}
 
-  /** 用户列表（缓存表） */
-  async list(keyword?: string, page = 1, pageSize = 20) {
+  /** 用户列表（缓存表）；systemEnabledOnly=true 时仅返回已启用系统用户 */
+  async list(keyword?: string, page = 1, pageSize = 20, systemEnabledOnly = false) {
     const where: any = { enabled: 1 };
+    if (systemEnabledOnly) where.systemEnabled = 1;
     if (keyword) {
       where.OR = [
         { name: { contains: keyword } },

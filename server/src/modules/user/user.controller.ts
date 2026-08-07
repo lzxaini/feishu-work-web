@@ -17,11 +17,16 @@ import { Roles } from '../../common/decorators/roles.decorator';
 export class UserController {
   constructor(private userService: UserService) {}
 
-  /** 通讯录用户列表（走缓存，支持搜索） */
+  /** 通讯录用户列表（走缓存，支持搜索；systemEnabled=1 仅返回已启用系统用户） */
   @UseGuards(JwtAuthGuard)
   @Get()
-  list(@Query('keyword') keyword?: string, @Query('page') page?: string, @Query('pageSize') pageSize?: string) {
-    return this.userService.list(keyword, Number(page) || 1, Number(pageSize) || 20);
+  list(
+    @Query('keyword') keyword?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('systemEnabled') systemEnabled?: string,
+  ) {
+    return this.userService.list(keyword, Number(page) || 1, Number(pageSize) || 20, systemEnabled === '1');
   }
 
   /** 手动同步通讯录（管理员） */

@@ -68,7 +68,7 @@ async function searchUsers(kw: string) {
   keyword.value = kw || '';
   page.value = 1;
   try {
-    const res = await getUsers({ keyword: keyword.value, page: 1, pageSize, systemEnabled: 1 });
+    const res = await getUsers({ keyword: keyword.value, page: 1, pageSize });
     options.value = res.items.map(mapUser);
     total.value = res.total;
   } finally {
@@ -82,7 +82,7 @@ async function loadMore() {
   loadingMore.value = true;
   try {
     const nextPage = page.value + 1;
-    const res = await getUsers({ keyword: keyword.value, page: nextPage, pageSize, systemEnabled: 1 });
+    const res = await getUsers({ keyword: keyword.value, page: nextPage, pageSize });
     options.value = [...options.value, ...res.items.map(mapUser)];
     page.value = nextPage;
   } finally {

@@ -57,14 +57,7 @@
         </div>
       </div>
       <div class="toolbar">
-        <t-select
-          v-model="filters.openId"
-          :options="userOptions"
-          clearable
-          filterable
-          placeholder="全部用户"
-          style="width: 220px"
-        />
+        <UserSelect v-model="filters.openId" placeholder="全部用户" width="220px" />
         <t-date-picker v-model="filters.startDate" format="YYYY-MM-DD" placeholder="开始日期" clearable style="width: 150px" />
         <span class="range-sep">至</span>
         <t-date-picker v-model="filters.endDate" format="YYYY-MM-DD" placeholder="结束日期" clearable style="width: 150px" />
@@ -119,14 +112,7 @@
         </div>
         <div class="remind-row">
           <span class="remind-label">提醒用户</span>
-          <t-select
-            v-model="remindOpenId"
-            :options="userOptions"
-            clearable
-            filterable
-            placeholder="留空提醒全部启用用户"
-            style="width: 200px"
-          />
+          <UserSelect v-model="remindOpenId" placeholder="留空提醒全部启用用户" width="200px" />
         </div>
         <p class="remind-tip">
           将向所选日期尚未报工的启用系统用户推送卡片消息（含「去报工」跳转按钮）。用户留空则提醒全部。
@@ -141,6 +127,7 @@ import { computed, h, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Button, MessagePlugin } from 'tdesign-vue-next';
 import { getStatsDaily, sendReportRemind } from '../api/stats';
+import UserSelect from '../components/UserSelect.vue';
 
 const router = useRouter();
 
@@ -153,8 +140,6 @@ const summary = ref({ totalHours: 0, reportCount: 0, reportedUsers: 0 });
 
 const filters = ref<{ openId?: string; startDate?: string; endDate?: string }>({});
 const activeTab = ref('user');
-
-const userOptions = computed(() => users.value.map((u) => ({ label: u.name, value: u.openId })));
 
 // 分页（本地分页，数据量小）
 const userPageSize = 20;
