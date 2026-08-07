@@ -347,7 +347,7 @@ export class ReportService {
     return { limit, used, remaining: Math.max(0, limit - used) };
   }
 
-  /** 统计某日该用户已报的普通时长合计（排除已撤销/删除） */
+  /** 统计某日该用户已占用的普通时长合计（仅审批中/已通过计入；驳回、撤销不占用额度） */
   private async getUsedNormal(reportDate: string, openId: string): Promise<number> {
     const start = new Date(reportDate);
     const end = new Date(start);
@@ -357,7 +357,7 @@ export class ReportService {
         userOpenId: openId,
         reportDate: { gte: start, lt: end },
         deleted: 0,
-        status: { not: REPORT_STATUS.CANCELLED },
+        status: { in: [REPORT_STATUS.PENDING, REPORT_STATUS.APPROVED] },
       },
       _sum: { normalHours: true },
     });
