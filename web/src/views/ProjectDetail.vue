@@ -2,7 +2,7 @@
  * @Author: 17630921248 1245634367@qq.com
  * @Date: 2026-08-04 13:49:25
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-04 17:06:11
+ * @LastEditTime: 2026-08-07 09:13:40
  * @FilePath: \feishu-work-web\web\src\views\ProjectDetail.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -55,12 +55,12 @@
       </div>
 
       <div class="surface-card section-card">
-        <div class="section-title">负责人</div>
+        <div class="section-title">审批人</div>
         <div class="owner-list">
           <div v-for="m in project.members || []" :key="m.id" class="owner-chip">
             {{ m.userName || m.openId }}
           </div>
-          <span v-if="!(project.members || []).length" class="empty">暂无负责人</span>
+          <span v-if="!(project.members || []).length" class="empty">暂无审批人</span>
         </div>
       </div>
 

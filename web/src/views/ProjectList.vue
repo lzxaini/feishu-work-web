@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:32
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 08:12:13
+ * @LastEditTime: 2026-08-07 09:14:12
  * @FilePath: \feishu-work-web\web\src\views\ProjectList.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -96,7 +96,7 @@
         <div class="card-info">
           <div class="info-row"><span class="info-label">合同编号</span><span class="info-value">{{ row.contractNo || '-' }}</span></div>
           <div class="info-row"><span class="info-label">合同金额</span><span class="info-value">{{ moneyText(row.contractAmount) }}</span></div>
-          <div class="info-row"><span class="info-label">负责人</span><span class="info-value">{{ ownerNames(row) }}</span></div>
+          <div class="info-row"><span class="info-label">审批人</span><span class="info-value">{{ ownerNames(row) }}</span></div>
           <div v-if="row.remark" class="info-row"><span class="info-label">备注</span><span class="info-value">{{ row.remark }}</span></div>
         </div>
         <div class="card-actions" @click.stop>
@@ -201,7 +201,7 @@ const columns = [
   // { colKey: 'contractAmount', title: '合同金额', width: 120, cell: (h: any, { row }: any) => moneyText(row?.contractAmount) },
   {
     colKey: 'members',
-    title: '负责人',
+    title: '审批人',
     width: 140,
     ellipsis: true,
     cell: (h: any, { row }: any) => (row?.members || []).map((m: any) => m.userName || m.openId).join('、'),

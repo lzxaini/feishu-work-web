@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:34
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 08:09:19
+ * @LastEditTime: 2026-08-07 09:13:49
  * @FilePath: \feishu-work-web\web\src\views\ProjectForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -72,7 +72,7 @@
         <t-input v-model="form.rdProjectDoc" placeholder="可选" />
       </t-form-item> -->
 
-      <t-form-item label="负责人">
+      <t-form-item label="审批人">
         <t-select
           v-model="form.ownerOpenId"
           clearable

@@ -1,9 +1,9 @@
 /*
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:40:22
- * @LastEditors: lzx 1245634367@qq.com
- * @LastEditTime: 2026-08-03 22:40:23
- * @FilePath: \feishu-work\server\src\modules\report\report.service.ts
+ * @LastEditors: 17630921248 1245634367@qq.com
+ * @LastEditTime: 2026-08-07 09:13:58
+ * @FilePath: \feishu-work-web\server\src\modules\report\report.service.ts
  * @Description: Fuck Bug
  * 微信：lizx2066
  */
@@ -293,12 +293,12 @@ export class ReportService {
     return this.fmt(updated);
   }
 
-  /** 撤销（本人/项目负责人/管理员；同步撤销飞书审批） */
+  /** 撤销（本人/项目审批人/管理员；同步撤销飞书审批） */
   async remove(id: number, user: JwtUser) {
     const report = await this.requireReport(id);
     const isOwner = await this.projectService.isOwner(report.projectId, user.openId);
     if (!user.isAdmin && report.userOpenId !== user.openId && !isOwner) {
-      throw new ForbiddenException('仅本人/项目负责人/管理员可撤销');
+      throw new ForbiddenException('仅本人/项目审批人/管理员可撤销');
     }
     if (report.status === REPORT_STATUS.APPROVED) {
       throw new BadRequestException('已通过的报工不可直接撤销（如需更正请走撤销申请）');
