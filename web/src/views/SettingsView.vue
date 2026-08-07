@@ -118,16 +118,37 @@
           <div class="card-desc">普通报工时长由系统按剩余额度自动计算，此值为每日上限</div>
         </div>
       </div>
-      <div class="toolbar">
-        <div class="config-item">
+
+      <div class="config-group">
+        <div class="config-group-title">报工规则</div>
+        <div class="config-row">
           <span class="config-label">工作日普通时长上限</span>
           <t-input-number v-model="hoursLimit" :min="1" :max="24" :step="1" style="width: 140px" />
+          <span class="config-hint">工作日普通报工每日时长上限，超出部分请填加班时长</span>
         </div>
-        <div class="config-item">
+        <div class="config-row">
           <span class="config-label">节假日允许报工</span>
           <t-switch v-model="holidayEnabled" />
+          <span class="config-hint">开启后节假日可提交报工（节假日报工一律走审批）</span>
         </div>
-        <t-button theme="primary" shape="round" :loading="savingConfig" @click="saveConfig">保存</t-button>
+      </div>
+
+      <div class="config-group">
+        <div class="config-group-title">报工提醒（定时任务）</div>
+        <div class="config-row">
+          <span class="config-label">报工提醒开关</span>
+          <t-switch v-model="remindEnabled" />
+          <span class="config-hint">开启后每天定时提醒昨天未报工或普通时长不足的用户</span>
+        </div>
+        <div class="config-row">
+          <span class="config-label">提醒时间</span>
+          <t-time-picker v-model="remindTime" format="HH:mm" style="width: 120px" clearable />
+          <span class="config-hint">每天发送报工提醒的时间（默认 08:00，仅工作日生效）</span>
+        </div>
+      </div>
+
+      <div class="config-actions">
+        <t-button theme="primary" shape="round" :loading="savingConfig" @click="saveConfig">保存配置</t-button>
       </div>
     </div>
   </div>
@@ -158,6 +179,8 @@ const admins = ref<any[]>([]);
 const newAdminOpenId = ref('');
 const hoursLimit = ref(8);
 const holidayEnabled = ref(false);
+const remindEnabled = ref(true);
+const remindTime = ref('08:00');
 const lastSyncText = ref('');
 const calendarJsonUrl = ref('');
 const syncingCalendar = ref(false);
@@ -295,6 +318,8 @@ async function loadConfig() {
   const cfg = await getConfig();
   if (cfg.working_hours_limit) hoursLimit.value = Number(cfg.working_hours_limit);
   holidayEnabled.value = cfg.holiday_report_enabled === '1';
+  remindEnabled.value = cfg.report_remind_enabled !== '0';
+  remindTime.value = cfg.report_remind_time || '08:00';
   if (cfg.calendar_json_url) calendarJsonUrl.value = cfg.calendar_json_url;
 }
 
@@ -321,6 +346,8 @@ async function saveConfig() {
   try {
     await setConfig('working_hours_limit', String(hoursLimit.value));
     await setConfig('holiday_report_enabled', holidayEnabled.value ? '1' : '0');
+    await setConfig('report_remind_enabled', remindEnabled.value ? '1' : '0');
+    await setConfig('report_remind_time', remindTime.value || '08:00');
     MessagePlugin.success('已保存');
   } finally {
     savingConfig.value = false;
@@ -464,15 +491,45 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.config-item {
+.config-group {
+  padding: 4px 2px;
+}
+
+.config-group + .config-group {
+  margin-top: 16px;
+}
+
+.config-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6e6e73;
+  margin-bottom: 8px;
+}
+
+.config-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 6px 0;
 }
 
 .config-label {
   font-size: 14px;
   color: #1d1d1f;
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.config-hint {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.config-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .table-wrap {
@@ -506,9 +563,13 @@ onMounted(() => {
   .metrics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .config-item {
+  .config-row {
     flex-direction: column;
     align-items: flex-start;
+    gap: 6px;
+  }
+  .config-label {
+    width: auto;
   }
 }
 </style>
