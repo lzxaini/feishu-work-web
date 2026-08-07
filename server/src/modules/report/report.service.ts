@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:40:22
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 09:13:58
+ * @LastEditTime: 2026-08-07 14:21:33
  * @FilePath: \feishu-work-web\server\src\modules\report\report.service.ts
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -193,25 +193,24 @@ export class ReportService {
     return this.fmt(report);
   }
 
-  /** 通知指定审批人（卡片 + 跳转，失败不影响主流程） */
+  /** 通知指定审批人（卡片 + 端内跳转，失败不影响主流程） */
   private async notifyApprover(report: any) {
     if (!report.approverOpenId) return;
     try {
       const project = await this.prisma.project.findUnique({ where: { id: report.projectId } });
       const date = new Date(report.reportDate).toISOString().slice(0, 10);
-      const webUrl = this.config.get('APP_WEB_URL') || '';
       await this.feishuMessage.sendActionCard(report.approverOpenId, {
-        title: '📋 收到一条报工待审批',
-        template: 'orange',
-        lines: [
-          `**${project?.name || ''}**`,
-          `报工日期：${date}`,
-          `普通时长：${Number(report.normalHours)}h｜加班时长：${Number(report.overtimeHours)}h`,
-          `提交人：${report.userName || report.userOpenId}`,
-        ],
-        buttonText: '去审批',
-        url: `${webUrl}/approvals`,
-      });
+				title: '📋 收到一条报工待审批',
+				template: 'orange',
+				lines: [
+					`**项目**：${project?.name || ''}`,
+					`报工日期：${date}`,
+					`普通时长：${Number(report.normalHours)}h｜加班时长：${Number(report.overtimeHours)}h`,
+					`提交人：${report.userName || report.userOpenId}`,
+				],
+				buttonText: '去审批',
+				url: this.feishuMessage.buildWebAppLink('/approvals'),
+			});
     } catch (e: any) {
       this.logger.warn(`通知审批人失败: ${e?.message}`);
     }

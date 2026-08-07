@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:57
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-04 16:29:26
+ * @LastEditTime: 2026-08-07 14:30:00
  * @FilePath: \feishu-work-web\web\src\views\ReportList.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -89,10 +89,11 @@
           <div class="info-row"><span class="info-label">普通/加班</span><span class="info-value">{{ row.normalHours }} / {{ row.overtimeHours }} h</span></div>
           <div class="info-row"><span class="info-label">类型</span><span class="info-value">{{ row.isHoliday ? '节假日' : '工作日' }}</span></div>
           <div class="info-row"><span class="info-label">报工人</span><span class="info-value">{{ row.userName || '-' }}</span></div>
+          <div v-if="row.status === 3" class="info-row"><span class="info-label">驳回原因</span><span class="info-value">{{ row.rejectReason || '-' }}</span></div>
         </div>
         <div class="card-actions">
           <t-button v-if="row.status === 1" theme="primary" variant="text" size="small" @click="edit(row)">编辑</t-button>
-          <t-button v-if="row.status !== 2" theme="danger" variant="text" size="small" @click="remove(row)">撤销</t-button>
+          <t-button v-if="row.status === 1" theme="danger" variant="text" size="small" @click="remove(row)">撤销</t-button>
         </div>
       </div>
       <t-empty v-if="!loading && rows.length === 0" description="暂无报工数据" />
@@ -184,6 +185,13 @@ const columns = [
     cell: (h: any, { row }: any) => h(Tag, { theme: statusTheme(row?.status), size: 'small', variant: 'light' }, { default: () => statusText(row?.status) }),
   },
   { colKey: 'userName', title: '报工人', width: 100 },
+  {
+    colKey: 'rejectReason',
+    title: '驳回原因',
+    minWidth: 140,
+    ellipsis: true,
+    cell: (h: any, { row }: any) => (row?.status === 3 ? row?.rejectReason || '-' : ''),
+  },
   {
     colKey: 'action',
     title: '操作',

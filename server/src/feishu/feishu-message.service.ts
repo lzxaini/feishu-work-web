@@ -60,4 +60,14 @@ export class FeishuMessageService {
       elements,
     });
   }
+
+  /**
+   * 生成飞书 Applink：在飞书端内打开网页应用的指定页面（自动免登，不跳外部浏览器）
+   * 协议：https://applink.feishu.cn/client/web_app/open
+   * 说明：path 拼接在开发者后台配置的网页应用主页地址上，无需依赖 APP_WEB_URL
+   */
+  buildWebAppLink(path: string, mode: 'appCenter' | 'window' | 'sidebar' = 'appCenter'): string {
+    const appId = this.feishu.appId;
+    return `https://applink.feishu.cn/client/web_app/open?appId=${encodeURIComponent(appId)}&mode=${mode}&path=${encodeURIComponent(path)}`;
+  }
 }

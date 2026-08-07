@@ -8,7 +8,6 @@
  * 微信：lizx2066
  */
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FeishuApprovalService } from '../../feishu/feishu-approval.service';
 import { FeishuMessageService } from '../../feishu/feishu-message.service';
@@ -28,7 +27,6 @@ export class ApprovalService {
     private feishuApproval: FeishuApprovalService,
     private feishuMessage: FeishuMessageService,
     private projectService: ProjectService,
-    private config: ConfigService,
   ) {}
 
   /** 系统内审批：当前用户为指定审批人的待审批报工（管理员可看全部） */
@@ -108,13 +106,12 @@ export class ApprovalService {
       if (!approved) lines.push(`**驳回原因**：${reason || '无'}`);
       if (approverName) lines.push(`**审批人**：${approverName}`);
 
-      const webUrl = this.config.get('APP_WEB_URL') || '';
       await this.feishuMessage.sendActionCard(report.userOpenId, {
         title: approved ? '✅ 报工审批通过' : '❌ 报工审批驳回',
         template: approved ? 'green' : 'red',
         lines,
         buttonText: '查看报工',
-        url: `${webUrl}/reports`,
+        url: this.feishuMessage.buildWebAppLink('/reports'),
       });
     } catch (e: any) {
       // 消息发送失败（如飞书未开通消息权限）不影响审批结果，仅记录
@@ -193,12 +190,12 @@ export class ApprovalService {
       data: { approvalStatus },
     });
 
-    // 通知报工人
+    // 通知报工人（卡片 + 端内跳转，与系统内审批的 notifyApproval 保持一致）
     try {
       if (status === REPORT_STATUS.APPROVED) {
-        await this.feishuMessage.sendText(report.userOpenId, '✅ 你的报工已通过审批');
+        await this.notifyApproval(report, true);
       } else if (status === REPORT_STATUS.REJECTED) {
-        await this.feishuMessage.sendText(report.userOpenId, '❌ 你的报工被驳回，请查看飞书审批详情');
+        await this.notifyApproval(report, false, report.rejectReason || undefined);
       }
     } catch {
       // ignore
