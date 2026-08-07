@@ -140,6 +140,11 @@ export class ReportService {
     const total = normal + overtime;
     if (total <= 0) throw new BadRequestException('总时长必须大于 0');
 
+    // 用户被禁止时不允许填写加班申请（节假日加班 + 普通工作日加班均受限）
+    if (overtime > 0 && !(await this.isUserHolidayEnabled(user.openId))) {
+      throw new BadRequestException('您已被禁止填写加班申请，请联系管理员');
+    }
+
     // 工作日普通时长：当天累计不能超过 limit（允许多次报工，剩余额度由系统自动计算）
     if (!isHoliday && normal > 0) {
       const used = await this.getUsedNormal(dto.reportDate, user.openId);
@@ -344,7 +349,12 @@ export class ReportService {
   async getQuota(reportDate: string, user: JwtUser) {
     const limit = await this.getHoursLimit();
     const used = await this.getUsedNormal(reportDate, user.openId);
-    return { limit, used, remaining: Math.max(0, limit - used) };
+    return {
+      limit,
+      used,
+      remaining: Math.max(0, limit - used),
+      userHolidayEnabled: await this.isUserHolidayEnabled(user.openId),
+    };
   }
 
   /** 统计某日该用户已占用的普通时长合计（仅审批中/已通过计入；驳回、撤销不占用额度） */

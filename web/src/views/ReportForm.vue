@@ -57,7 +57,7 @@
         <t-form-item label="加班时长">
           <t-input-number
             v-model="form.overtimeHours"
-            :disabled="quota.remaining > 0"
+            :disabled="!canFillOvertime"
             :min="0"
             :max="24"
             :step="0.5"
@@ -67,7 +67,8 @@
         <div class="span-full field-tips">
           <p v-if="quota.remaining > 0">普通时长：今日还可报 {{ quota.remaining }}h（普通额度用完后才可填写加班）</p>
           <p v-else>普通时长：今日已报满 {{ quota.limit }}h，普通时长不可再报</p>
-          <p>加班时长：{{ quota.remaining > 0 ? '普通额度未用完，暂不可填写加班' : '可填写，>0 将走审批' }}</p>
+          <p v-if="quota.userHolidayEnabled === false">加班时长：您已被禁止填写加班申请，请联系管理员</p>
+          <p v-else>加班时长：{{ canFillOvertime ? '可填写，>0 将走审批' : '普通额度未用完，暂不可填写加班' }}</p>
         </div>
 
         <t-form-item v-if="needApproval" label="指定审批人" required-mark class="span-full">
@@ -133,7 +134,7 @@ const router = useRouter();
 const saving = ref(false);
 const projects = ref<any[]>([]);
 const holiday = ref<boolean | null>(null);
-const quota = ref<any>({ limit: 8, used: 0, remaining: 8 });
+const quota = ref<any>({ limit: 8, used: 0, remaining: 8, userHolidayEnabled: true });
 const approverOptions = ref<{ label: string; value: string }[]>([]);
 const approverSearching = ref(false);
 
@@ -162,6 +163,11 @@ const form = ref<any>({
 
 // 是否需审批：节假日 或 加班>0
 const needApproval = computed(() => holiday.value === true || form.value.overtimeHours > 0);
+
+// 是否可填写加班：用户未被禁止，且（节假日 或 普通额度已用完）
+const canFillOvertime = computed(
+  () => quota.value.userHolidayEnabled !== false && (holiday.value === true || quota.value.remaining === 0),
+);
 
 const selectedProjectName = computed(() => {
   const p =
@@ -242,7 +248,7 @@ async function searchApprovers(keyword: string) {
 
 async function loadQuota() {
   if (!form.value.reportDate) {
-    quota.value = { limit: 8, used: 0, remaining: 8 };
+    quota.value = { limit: 8, used: 0, remaining: 8, userHolidayEnabled: true };
     return;
   }
   const res = await getReportQuota(form.value.reportDate);
@@ -263,6 +269,9 @@ async function save() {
   if (!form.value.projectId) return MessagePlugin.warning('请选择项目');
   if (!form.value.reportDate) return MessagePlugin.warning('请选择报工日期');
   if (form.value.normalHours + form.value.overtimeHours <= 0) return MessagePlugin.warning('总时长必须大于 0');
+  if (form.value.overtimeHours > 0 && quota.value.userHolidayEnabled === false) {
+    return MessagePlugin.warning('您已被禁止填写加班申请');
+  }
   const needApprove = holiday.value === true || form.value.overtimeHours > 0;
   if (needApprove && !form.value.approverOpenId) return MessagePlugin.warning('该报工需审批，请选择指定审批人');
   saving.value = true;
