@@ -22,13 +22,15 @@ export class ProjectController {
 
   @Get()
   list(
+    @CurrentUser() user: JwtUser,
     @Query('keyword') keyword?: string,
     @Query('status') status?: string,
     @Query('priority') priority?: string,
+    @Query('my') my?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ) {
-    return this.projectService.list({ keyword, status, priority, page: Number(page) || 1, pageSize: Number(pageSize) || 20 });
+    return this.projectService.list({ keyword, status, priority, my, page: Number(page) || 1, pageSize: Number(pageSize) || 20 }, user);
   }
 
   @Get(':id')

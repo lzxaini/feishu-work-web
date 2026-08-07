@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:45:00
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 15:48:26
+ * @LastEditTime: 2026-08-07 15:59:01
  * @FilePath: \feishu-work-web\web\src\views\ReportForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -93,9 +93,13 @@
       </t-form>
     </div>
 
-    <t-dialog v-model:visible="projectPickerVisible" header="选择项目" :footer="false" width="60%">
+    <t-dialog v-model:visible="projectPickerVisible" header="选择项目" :footer="false" width="92%">
       <div class="picker-toolbar">
-        <t-input v-model="projectKeyword" placeholder="搜索项目名称/合同编号" clearable style="width: 100%" @enter="searchProjectRows" @clear="searchProjectRows" />
+        <t-tabs v-model="projectTab" :tabs-dividers="false" @change="onProjectTabChange">
+          <t-tab-panel value="mine" label="历史填报" />
+          <t-tab-panel value="all" label="所有项目" />
+        </t-tabs>
+        <t-input v-model="projectKeyword" placeholder="搜索项目名称/合同编号" clearable style="width: 100%;margin-top: 20px;" @enter="searchProjectRows" @clear="searchProjectRows" />
       </div>
       <t-table
         :data="projectRows"
@@ -130,6 +134,7 @@ const quota = ref<any>({ limit: 8, used: 0, remaining: 8, userHolidayEnabled: tr
 
 // 项目选择弹窗
 const projectPickerVisible = ref(false);
+const projectTab = ref('mine'); // mine 我的项目 / all 所有项目
 const projectKeyword = ref('');
 const projectRows = ref<any[]>([]);
 const projectLoading = ref(false);
@@ -178,15 +183,28 @@ function onProjectChange() {
   form.value.approverOpenId = defaultApproverOpenId();
 }
 
-const projectColumns = [
-  { colKey: 'contractNo', title: '项目编号', minWidth: 200, cell: (h: any, { row }: any) => row?.contractNo || '-' },
-  { colKey: 'name', title: '项目名称', minWidth: 200, ellipsis: true },
-  { colKey: 'description', title: '项目描述', minWidth: 200, ellipsis: true },
-  { colKey: 'members', title: '审批人', width: 140, ellipsis: true, cell: (h: any, { row }: any) => (row?.members || []).map((m: any) => m.userName || m.openId).join('、') || '-' },
-  { colKey: 'status', title: '状态', width: 80, cell: (h: any, { row }: any) => h(Tag, { theme: 'primary', variant: 'light' }, { default: () => '进行中' }) },
-];
+const projectColumns = computed(() => {
+  const cols: any[] = [
+    { colKey: 'contractNo', title: '项目编号', minWidth: 200, cell: (h: any, { row }: any) => row?.contractNo || '-' },
+    { colKey: 'name', title: '项目名称', minWidth: 200, ellipsis: true },
+    { colKey: 'description', title: '项目描述', minWidth: 200, ellipsis: true },
+    { colKey: 'members', title: '审批人', width: 140, ellipsis: true, cell: (h: any, { row }: any) => (row?.members || []).map((m: any) => m.userName || m.openId).join('、') || '-' },
+    { colKey: 'status', title: '状态', width: 80, cell: (h: any, { row }: any) => h(Tag, { theme: 'primary', variant: 'light' }, { default: () => '进行中' }) },
+  ];
+  // 我的项目页签：展示最近一次报工日期
+  if (projectTab.value === 'mine') {
+    cols.splice(2, 0, {
+      colKey: 'lastReportAt',
+      title: '上次填报',
+      minWidth: 150,
+      cell: (h: any, { row }: any) => (row?.lastReportAt ? String(row.lastReportAt).slice(0, 10) : '-'),
+    });
+  }
+  return cols;
+});
 
 function openProjectPicker() {
+  projectTab.value = 'mine';
   projectKeyword.value = '';
   projectPage.value = 1;
   loadProjectRows();
@@ -196,12 +214,21 @@ function openProjectPicker() {
 async function loadProjectRows() {
   projectLoading.value = true;
   try {
-    const res = await getProjects({ keyword: projectKeyword.value, status: 1, page: projectPage.value, pageSize: projectPageSize });
+    const params: any = { keyword: projectKeyword.value, page: projectPage.value, pageSize: projectPageSize };
+    if (projectTab.value === 'mine') params.my = 1; // 我的项目：按最近报工时间倒序
+    else params.status = 1; // 所有项目：进行中
+    const res = await getProjects(params);
     projectRows.value = res.items;
     projectTotal.value = res.total;
   } finally {
     projectLoading.value = false;
   }
+}
+
+// 切换页签：重置到第 1 页再加载
+function onProjectTabChange() {
+  projectPage.value = 1;
+  loadProjectRows();
 }
 
 // 搜索：重置到第 1 页再加载

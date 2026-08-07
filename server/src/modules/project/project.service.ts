@@ -17,14 +17,50 @@ import { JwtUser } from '../../common/decorators/current-user.decorator';
 export class ProjectService {
   constructor(private prisma: PrismaService) {}
 
-  /** 项目列表（分页/搜索/状态优先级过滤） */
-  async list(query: { keyword?: string; status?: string; priority?: string; page?: number; pageSize?: number }) {
+  /** 项目列表（分页/搜索/状态优先级过滤；my=1 返回当前用户报工过的进行中项目，按最近报工时间倒序） */
+  async list(
+    query: { keyword?: string; status?: string; priority?: string; my?: string; page?: number; pageSize?: number },
+    user?: JwtUser,
+  ) {
+    const page = query.page || 1;
+    const pageSize = query.pageSize || 20;
     const where: any = { deleted: 0 };
     if (query.keyword) where.name = { contains: query.keyword };
     if (query.status) where.status = Number(query.status);
     if (query.priority) where.priority = Number(query.priority);
-    const page = query.page || 1;
-    const pageSize = query.pageSize || 20;
+
+    // 我的项目：当前用户报工过且进行中，按最近报工时间倒序
+    if (query.my === '1' && user?.openId) {
+      const reports = await this.prisma.workReport.findMany({
+        where: { userOpenId: user.openId, deleted: 0 },
+        select: { projectId: true, reportDate: true },
+        orderBy: { reportDate: 'desc' },
+      });
+      // 每个项目保留最近一次报工时间
+      const lastReportAt = new Map<number, Date>();
+      for (const r of reports) {
+        if (!lastReportAt.has(r.projectId)) lastReportAt.set(r.projectId, r.reportDate);
+      }
+      const ids = [...lastReportAt.keys()];
+      if (!ids.length) return { total: 0, page, pageSize, items: [] };
+      where.id = { in: ids };
+      where.status = 1; // 仅进行中
+
+      const projects = await this.prisma.project.findMany({
+        where,
+        include: { members: { where: { role: 1 } } },
+      });
+      // 按最近报工时间倒序
+      projects.sort((a, b) => (lastReportAt.get(b.id)?.getTime() || 0) - (lastReportAt.get(a.id)?.getTime() || 0));
+      const total = projects.length;
+      // 附带最近一次报工日期（上次填报）
+      const items = projects.slice((page - 1) * pageSize, page * pageSize).map((p) => ({
+        ...p,
+        lastReportAt: lastReportAt.get(p.id) || null,
+      }));
+      return { total, page, pageSize, items };
+    }
+
     const [total, items] = await this.prisma.$transaction([
       this.prisma.project.count({ where }),
       this.prisma.project.findMany({
