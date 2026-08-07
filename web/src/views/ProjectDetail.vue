@@ -2,7 +2,7 @@
  * @Author: 17630921248 1245634367@qq.com
  * @Date: 2026-08-04 13:49:25
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 09:18:09
+ * @LastEditTime: 2026-08-07 09:49:55
  * @FilePath: \feishu-work-web\web\src\views\ProjectDetail.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -96,7 +96,7 @@ const project = ref<any>(null);
 const loading = ref(false);
 
 function statusText(s: number) {
-  return ({ 1: '进行中', 2: '已完成', 3: '已取消' } as Record<number, string>)[s] || String(s);
+  return ({ 1: '进行中', 2: '已完成', 3: '已取消', 4: '已暂停', 5: '已失败' } as Record<number, string>)[s] || String(s);
 }
 function statusTheme(s: number): 'primary' | 'default' | 'success' | 'danger' | 'warning' {
   return ({ 1: 'primary', 2: 'success', 3: 'danger' } as Record<number, 'primary' | 'default' | 'success' | 'danger' | 'warning'>)[s] || 'default';

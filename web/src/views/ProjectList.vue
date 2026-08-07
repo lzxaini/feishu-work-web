@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:44:32
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 09:14:12
+ * @LastEditTime: 2026-08-07 09:49:57
  * @FilePath: \feishu-work-web\web\src\views\ProjectList.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -136,6 +136,8 @@ const statusOptions = [
   { value: 1, label: '进行中' },
   { value: 2, label: '已完成' },
   { value: 3, label: '已取消' },
+  { label: '已暂停', value: 4 },
+  { label: '已失败', value: 5 },
 ];
 
 const priorityOptions = [
