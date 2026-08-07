@@ -60,20 +60,39 @@ export class FeishuAuthService {
   /** 通讯录同步：拉取根部门下所有用户到缓存表 */
   async syncUsers(): Promise<{ count: number }> {
     const depData = await this.feishu.request('get', '/contact/v3/departments?parent_department_id=0&page_size=50');
-    const departments: { department_id: string; name?: string }[] = depData?.items || [];
+    // 飞书 v3 部门接口返回 open_department_id（department_id 仅在有旧版 ID 权限时才返回）
+    const departments: { open_department_id: string; name?: string }[] = depData?.items || [];
 
     let count = 0;
     for (const dep of departments) {
       let pageToken = '';
       do {
-        const path = `/contact/v3/users?department_id=${dep.department_id}&page_size=50${pageToken ? `&page_token=${pageToken}` : ''}`;
+        const path = `/contact/v3/users?department_id=${dep.open_department_id}&page_size=50${pageToken ? `&page_token=${pageToken}` : ''}`;
         const data = await this.feishu.request('get', path);
         const items: any[] = data?.items || [];
         for (const u of items) {
           await this.prisma.feishuUserCache.upsert({
             where: { openId: u.open_id },
-            update: { name: u.name || '', unionId: u.union_id, userId: u.user_id, departmentName: dep.name, lastSyncAt: new Date() },
-            create: { openId: u.open_id, unionId: u.union_id, userId: u.user_id, name: u.name || '', departmentName: dep.name, lastSyncAt: new Date() },
+            // update：仅在返回有效值时覆盖，避免把已有姓名/联系方式清空（权限受限时接口可能不返回 name）
+            update: {
+              ...(u.name ? { name: u.name } : {}),
+              ...(u.union_id ? { unionId: u.union_id } : {}),
+              ...(u.user_id ? { userId: u.user_id } : {}),
+              ...(u.mobile ? { mobile: u.mobile } : {}),
+              ...(u.email ? { email: u.email } : {}),
+              departmentName: dep.name,
+              lastSyncAt: new Date(),
+            },
+            create: {
+              openId: u.open_id,
+              unionId: u.union_id || null,
+              userId: u.user_id || null,
+              name: u.name || '',
+              mobile: u.mobile || null,
+              email: u.email || null,
+              departmentName: dep.name,
+              lastSyncAt: new Date(),
+            },
           });
           count++;
         }
