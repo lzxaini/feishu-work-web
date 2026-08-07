@@ -2,7 +2,7 @@
  * @Author: 17630921248 1245634367@qq.com
  * @Date: 2026-08-04 13:49:25
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 09:13:40
+ * @LastEditTime: 2026-08-07 09:18:09
  * @FilePath: \feishu-work-web\web\src\views\ProjectDetail.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -26,7 +26,7 @@
         <div class="hero-tags" v-if="project">
           <t-tag :theme="statusTheme(project.status)" size="medium" variant="light">{{ statusText(project.status) }}</t-tag>
           <t-tag :theme="priorityTheme(project.priority)" size="medium" variant="light">{{ priorityText(project.priority) }}</t-tag>
-          <t-tag v-if="project.contractNo" size="medium" variant="light">合同号 {{ project.contractNo }}</t-tag>
+          <t-tag v-if="project.contractNo" size="medium" variant="light">项目编号 {{ project.contractNo }}</t-tag>
         </div>
       </div>
     </div>
@@ -35,16 +35,16 @@
       <div class="surface-card section-card">
         <div class="section-title">基础信息</div>
         <div class="info-grid">
-          <div class="info-item"><span class="info-label">项目编号</span><span class="info-value">{{ project.code || '-' }}</span></div>
-          <div class="info-item"><span class="info-label">日期</span><span class="info-value">{{ dateText(project.contractDate) }}</span></div>
+          <div class="info-item"><span class="info-label">项目编号</span><span class="info-value">{{ project.contractNo || '-' }}</span></div>
+          <!-- <div class="info-item"><span class="info-label">日期</span><span class="info-value">{{ dateText(project.contractDate) }}</span></div> -->
           <div class="info-item"><span class="info-label">起止日期</span><span class="info-value">{{ dateText(project.startDate) }} ~ {{ dateText(project.endDate) }}</span></div>
           <div class="info-item"><span class="info-label">优先级</span><span class="info-value">{{ priorityText(project.priority) }}</span></div>
           <div class="info-item"><span class="info-label">状态</span><span class="info-value">{{ statusText(project.status) }}</span></div>
-          <div class="info-item"><span class="info-label">申请专利</span><span class="info-value">{{ project.patentApplied ? '是' : '否' }}</span></div>
+          <!-- <div class="info-item"><span class="info-label">申请专利</span><span class="info-value">{{ project.patentApplied ? '是' : '否' }}</span></div> -->
         </div>
       </div>
 
-      <div class="surface-card section-card">
+      <!-- <div class="surface-card section-card">
         <div class="section-title">成本与文档</div>
         <div class="info-grid">
           <div class="info-item"><span class="info-label">合同编号</span><span class="info-value">{{ project.contractNo || '-' }}</span></div>
@@ -52,7 +52,7 @@
           <div class="info-item"><span class="info-label">研发费用摊销</span><span class="info-value money">{{ moneyText(project.rdCostAmortization) }}</span></div>
           <div class="info-item span-2"><span class="info-label">研发项目书</span><span class="info-value">{{ project.rdProjectDoc || '-' }}</span></div>
         </div>
-      </div>
+      </div> -->
 
       <div class="surface-card section-card">
         <div class="section-title">审批人</div>
