@@ -196,6 +196,74 @@ export class StatsService {
     };
   }
 
+  /** 定时任务：提醒某工作日未报工或普通时长不足上限的启用系统用户（用于昨天提醒） */
+  async remindUnfinishedWorkday(dateStr: string) {
+    const start = new Date(dateStr);
+    if (isNaN(start.getTime())) throw new BadRequestException('日期格式不正确');
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    const users = await this.enabledUsers();
+    const limit = await this.getWorkHoursLimit();
+
+    // 该日期每位用户的普通时长合计（审批中/已通过视为有效报工）
+    const grouped = await this.prisma.workReport.groupBy({
+      by: ['userOpenId'],
+      where: {
+        userOpenId: { in: users.map((u) => u.openId) },
+        reportDate: { gte: start, lt: end },
+        deleted: 0,
+        status: { in: [REPORT_STATUS.PENDING, REPORT_STATUS.APPROVED] },
+      },
+      _sum: { normalHours: true },
+    });
+    const hoursMap = new Map(grouped.map((g) => [g.userOpenId, Number(g._sum.normalHours || 0)]));
+
+    // 目标：未报工（无记录）或 普通时长 < 上限
+    const targets = users.filter((u) => (hoursMap.get(u.openId) || 0) < limit);
+
+    const cardTitle = `⏰ ${dateStr} 报工提醒`;
+    let sent = 0;
+    let failed = 0;
+    for (const u of targets) {
+      const reported = hoursMap.has(u.openId);
+      const hours = hoursMap.get(u.openId) || 0;
+      const line1 = reported ? `昨天（${dateStr}）你的普通报工时长共 ${hours} 小时` : `昨天（${dateStr}）你还没有提交报工`;
+      try {
+        await this.feishuMessage.sendActionCard(u.openId, {
+          title: cardTitle,
+          template: 'orange',
+          lines: [line1, `工作日报工普通时长上限为 ${limit} 小时，记得及时补报哦～`],
+          buttonText: '去报工',
+          url: this.feishuMessage.buildWebAppLink('/reports/new'),
+        });
+        sent++;
+        await this.logMessage(u.openId, dateStr, 1);
+      } catch (e: any) {
+        failed++;
+        this.logger.warn(`定时提醒发送失败 ${u.name}: ${e?.message}`);
+        await this.logMessage(u.openId, dateStr, 2, String(e?.message || e));
+      }
+    }
+
+    return {
+      date: dateStr,
+      limit,
+      total: users.length,
+      targets: targets.length,
+      sent,
+      failed,
+      recipients: targets.map((u) => u.name),
+    };
+  }
+
+  /** 工作日普通时长上限（SystemConfig 优先，默认 8） */
+  private async getWorkHoursLimit(): Promise<number> {
+    const cfg = await this.prisma.systemConfig.findUnique({ where: { configKey: 'working_hours_limit' } });
+    if (cfg?.configValue && Number(cfg.configValue) > 0) return Number(cfg.configValue);
+    return 8;
+  }
+
   private async logMessage(receiverOpenId: string, dateStr: string, sendStatus: number, error?: string) {
     try {
       await this.prisma.messageLog.create({

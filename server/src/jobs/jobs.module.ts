@@ -10,12 +10,14 @@
 import { Module } from '@nestjs/common';
 import { ApprovalModule } from '../modules/approval/approval.module';
 import { CalendarModule } from '../modules/calendar/calendar.module';
+import { StatsModule } from '../modules/stats/stats.module';
 import { ApprovalSyncJob } from './approval-sync.job';
 import { CalendarSyncJob } from './calendar-sync.job';
 import { UserSyncJob } from './user-sync.job';
+import { ReportRemindJob } from './report-remind.job';
 
 @Module({
-  imports: [ApprovalModule, CalendarModule],
-  providers: [ApprovalSyncJob, CalendarSyncJob, UserSyncJob],
+  imports: [ApprovalModule, CalendarModule, StatsModule],
+  providers: [ApprovalSyncJob, CalendarSyncJob, UserSyncJob, ReportRemindJob],
 })
 export class JobsModule {}
