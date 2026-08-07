@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:45:00
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 10:26:23
+ * @LastEditTime: 2026-08-07 10:33:20
  * @FilePath: \feishu-work-web\web\src\views\ReportForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -186,6 +186,7 @@ const projectColumns = [
   { colKey: 'contractNo', title: '项目编号', minWidth: 200, cell: (h: any, { row }: any) => row?.contractNo || '-' },
   { colKey: 'name', title: '项目名称', minWidth: 200, ellipsis: true },
   { colKey: 'description', title: '项目描述', minWidth: 200, ellipsis: true },
+  { colKey: 'members', title: '审批人', width: 140, ellipsis: true, cell: (h: any, { row }: any) => (row?.members || []).map((m: any) => m.userName || m.openId).join('、') || '-' },
   { colKey: 'status', title: '状态', width: 80, cell: (h: any, { row }: any) => h(Tag, { theme: 'primary', variant: 'light' }, { default: () => '进行中' }) },
 ];
 
