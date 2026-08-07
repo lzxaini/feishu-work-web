@@ -82,6 +82,26 @@
 
     <div class="surface-card section-card">
       <div class="card-head">
+        <div class="card-icon">👤</div>
+        <div>
+          <div class="card-title">用户节假日报工权限</div>
+          <div class="card-desc">从飞书通讯录拉取用户列表，可单独控制每位用户是否允许节假日报工</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <t-input v-model="userKeyword" placeholder="搜索姓名/手机/邮箱" clearable style="width: 260px" @enter="doSearchUsers" @clear="doSearchUsers" />
+        <t-button theme="default" shape="round" @click="doSearchUsers">搜索</t-button>
+      </div>
+      <div class="table-wrap">
+        <t-table :data="userRows" :columns="userColumns" row-key="openId" hover :loading="userLoading" />
+        <div v-if="userTotal > 0" class="pager">
+          <t-pagination :total="userTotal" :page-size="userPageSize" :current="userPage" @change="onUserPageChange" />
+        </div>
+      </div>
+    </div>
+
+    <div class="surface-card section-card">
+      <div class="card-head">
         <div class="card-icon">⚙️</div>
         <div>
           <div class="card-title">报工配置</div>
@@ -106,8 +126,16 @@
 <script setup lang="ts">
 import { h, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { Button, MessagePlugin } from 'tdesign-vue-next';
-import { getAdminList, addAdmin as apiAddAdmin, removeAdmin as apiRemoveAdmin, syncUsers, getConfig, setConfig } from '../api/admin';
+import { Button, MessagePlugin, Switch } from 'tdesign-vue-next';
+import {
+  getAdminList,
+  addAdmin as apiAddAdmin,
+  removeAdmin as apiRemoveAdmin,
+  syncUsers,
+  getConfig,
+  setConfig,
+  setUserHolidayEnabled,
+} from '../api/admin';
 import { getUsers } from '../api/project';
 
 const router = useRouter();
@@ -120,6 +148,68 @@ const newAdminOpenId = ref('');
 const hoursLimit = ref(8);
 const holidayEnabled = ref(false);
 const lastSyncText = ref('');
+
+// 用户列表（节假日报工权限）
+const userRows = ref<any[]>([]);
+const userTotal = ref(0);
+const userPage = ref(1);
+const userPageSize = 20;
+const userKeyword = ref('');
+const userLoading = ref(false);
+const togglingIds = ref<Set<string>>(new Set());
+
+const userColumns = [
+  { colKey: 'name', title: '姓名' },
+  { colKey: 'departmentName', title: '部门' },
+  { colKey: 'mobile', title: '手机' },
+  { colKey: 'email', title: '邮箱' },
+  {
+    colKey: 'holidayReportEnabled',
+    title: '允许节假日报工',
+    width: 150,
+    cell: (h: any, { row }: any) =>
+      h(Switch, {
+        value: row.holidayReportEnabled === 1,
+        disabled: togglingIds.value.has(row.openId),
+        onChange: (v: any) => toggleHoliday(row, !!v),
+      }),
+  },
+];
+
+async function loadUserList() {
+  userLoading.value = true;
+  try {
+    const res = await getUsers({ keyword: userKeyword.value, page: userPage.value, pageSize: userPageSize });
+    userRows.value = res.items;
+    userTotal.value = res.total;
+  } finally {
+    userLoading.value = false;
+  }
+}
+
+function doSearchUsers() {
+  userPage.value = 1;
+  loadUserList();
+}
+
+function onUserPageChange(pageInfo: any) {
+  userPage.value = pageInfo.current;
+  loadUserList();
+}
+
+async function toggleHoliday(row: any, enabled: boolean) {
+  if (togglingIds.value.has(row.openId)) return;
+  togglingIds.value.add(row.openId);
+  try {
+    await setUserHolidayEnabled(row.openId, enabled);
+    row.holidayReportEnabled = enabled ? 1 : 0;
+    MessagePlugin.success(`${row.name} 已${enabled ? '允许' : '禁止'}节假日报工`);
+  } catch (e) {
+    MessagePlugin.error('设置失败，请重试');
+  } finally {
+    togglingIds.value.delete(row.openId);
+  }
+}
 
 async function searchUsers(keyword: string) {
   searching.value = true;
@@ -152,6 +242,7 @@ async function doSync() {
     const res = await syncUsers();
     lastSyncText.value = new Date().toLocaleString('zh-CN');
     MessagePlugin.success(`同步完成，共 ${res.count} 人`);
+    loadUserList();
   } finally {
     syncing.value = false;
   }
@@ -192,6 +283,7 @@ onMounted(() => {
   searchUsers('');
   loadAdmins();
   loadConfig();
+  loadUserList();
 });
 </script>
 
@@ -339,6 +431,12 @@ onMounted(() => {
 .table-wrap {
   margin-top: 6px;
   overflow-x: auto;
+}
+
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 @media (max-width: 720px) {

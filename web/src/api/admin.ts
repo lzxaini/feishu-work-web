@@ -16,3 +16,5 @@ export const getConfig = () => request.get<any, any>('/config');
 export const setConfig = (configKey: string, configValue: string) =>
   request.put<any, any>('/config', { configKey, configValue });
 export const syncUsers = () => request.post<any, any>('/users/sync');
+export const setUserHolidayEnabled = (openId: string, enabled: boolean) =>
+  request.put<any, any>(`/users/${openId}/holiday`, { enabled });

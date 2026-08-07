@@ -7,7 +7,7 @@
  * @Description: Fuck Bug
  * 微信：lizx2066
  */
-import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../../common/guards/auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -30,5 +30,13 @@ export class UserController {
   @Post('sync')
   sync() {
     return this.userService.sync();
+  }
+
+  /** 设置用户是否允许节假日报工（管理员） */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Put(':openId/holiday')
+  setHoliday(@Param('openId') openId: string, @Body() body: { enabled: boolean }) {
+    return this.userService.setHolidayEnabled(openId, !!body.enabled);
   }
 }

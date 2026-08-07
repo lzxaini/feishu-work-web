@@ -134,6 +134,8 @@ model FeishuUserCache {
   email          String?   @db.VarChar(128)
   departmentName String?   @map("department_name") @db.VarChar(128)
   enabled        Int       @default(1)
+  // 是否允许节假日报工：1允许（默认，跟随全局开关） 0禁止
+  holidayReportEnabled Int @default(1) @map("holiday_report_enabled")
   lastSyncAt     DateTime? @map("last_sync_at")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")

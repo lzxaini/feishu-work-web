@@ -54,6 +54,12 @@ export class ReportService {
     return cfg.configValue === '1';
   }
 
+  /** 用户个人是否允许节假日报工（FeishuUserCache.holidayReportEnabled，默认允许） */
+  private async isUserHolidayEnabled(openId: string): Promise<boolean> {
+    const user = await this.prisma.feishuUserCache.findUnique({ where: { openId } });
+    return user ? user.holidayReportEnabled === 1 : true;
+  }
+
   private getApprovalCode(): string {
     return this.config.get('FEISHU_APPROVAL_CODE') || '';
   }
@@ -119,9 +125,13 @@ export class ReportService {
     const reportDate = new Date(dto.reportDate);
     const isHoliday = await this.calendar.isHoliday(reportDate);
 
-    // 节假日是否允许报工（系统配置，默认关闭）
-    if (isHoliday && !(await this.isHolidayReportEnabled())) {
-      throw new BadRequestException('节假日不允许提交报工，请选择工作日');
+    // 节假日是否允许报工（全局配置 && 用户个人开关）
+    if (isHoliday) {
+      const globalEnabled = await this.isHolidayReportEnabled();
+      const userEnabled = await this.isUserHolidayEnabled(user.openId);
+      if (!globalEnabled || !userEnabled) {
+        throw new BadRequestException('节假日不允许提交报工，请选择工作日');
+      }
     }
 
     const limit = await this.getHoursLimit();

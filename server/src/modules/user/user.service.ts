@@ -7,7 +7,7 @@
  * @Description: Fuck Bug
  * 微信：lizx2066
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { FeishuAuthService } from '../../feishu/feishu-auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -44,5 +44,15 @@ export class UserService {
   /** 同步通讯录 */
   sync() {
     return this.feishuAuth.syncUsers();
+  }
+
+  /** 设置某用户是否允许节假日报工 */
+  async setHolidayEnabled(openId: string, enabled: boolean) {
+    const user = await this.prisma.feishuUserCache.findUnique({ where: { openId } });
+    if (!user) throw new NotFoundException('用户不存在');
+    return this.prisma.feishuUserCache.update({
+      where: { openId },
+      data: { holidayReportEnabled: enabled ? 1 : 0 },
+    });
   }
 }

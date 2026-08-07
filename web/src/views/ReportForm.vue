@@ -1,9 +1,9 @@
 <!--
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:45:00
- * @LastEditors: lzx 1245634367@qq.com
- * @LastEditTime: 2026-08-03 22:45:01
- * @FilePath: \feishu-work\web\src\views\ReportForm.vue
+ * @LastEditors: 17630921248 1245634367@qq.com
+ * @LastEditTime: 2026-08-07 08:26:48
+ * @FilePath: \feishu-work-web\web\src\views\ReportForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
 -->
@@ -40,7 +40,7 @@
           <t-input-number
             v-model="form.normalHours"
             :disabled="quota.remaining === 0"
-            :min="0"
+            :min="0.5"
             :max="quota.remaining"
             :step="0.5"
             style="width: 100%"
