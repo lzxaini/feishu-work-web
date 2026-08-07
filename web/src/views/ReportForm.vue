@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:45:00
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 15:59:01
+ * @LastEditTime: 2026-08-07 16:14:51
  * @FilePath: \feishu-work-web\web\src\views\ReportForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -13,7 +13,7 @@
       <div class="hero-left">
         <t-button variant="text" theme="default" class="back-btn" @click="router.back()">← 返回报工管理</t-button>
         <h1 class="page-title">提交报工</h1>
-        <p class="hero-sub">选择项目与日期，填写工时后提交；节假日/加班报工需指定审批人（默认项目负责人）。</p>
+        <p class="hero-sub">选择项目与日期，填写工时后提交；节假日/加班报工需指定审批人（默认项目审批人）。</p>
       </div>
       <div class="hero-badge is-create">报工模式</div>
     </div>
@@ -72,13 +72,13 @@
         </div>
 
         <t-form-item v-if="needApproval" label="指定审批人" required-mark class="span-full">
-          <UserSelect v-model="form.approverOpenId" placeholder="默认项目负责人，可改为其他审批人" />
+          <UserSelect v-model="form.approverOpenId" placeholder="默认项目审批人，可改为其他审批人" />
         </t-form-item>
 
         <t-form-item v-if="holiday !== null" label="提示" class="span-full">
           <t-alert
             :theme="holiday || form.overtimeHours > 0 ? 'warning' : 'success'"
-            :message="holiday ? '该日期为节假日，报工将全部走审批（默认指定项目负责人）' : form.overtimeHours > 0 ? '已填写加班时长，报工将走审批（默认指定项目负责人）' : '工作日且无加班，报工免审批直接生效'"
+            :message="holiday ? '该日期为节假日，报工将全部走审批（默认指定项目审批人）' : form.overtimeHours > 0 ? '已填写加班时长，报工将走审批（默认指定项目审批人）' : '工作日且无加班，报工免审批直接生效'"
           />
         </t-form-item>
 
