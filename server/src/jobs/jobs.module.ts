@@ -9,11 +9,13 @@
  */
 import { Module } from '@nestjs/common';
 import { ApprovalModule } from '../modules/approval/approval.module';
+import { CalendarModule } from '../modules/calendar/calendar.module';
 import { ApprovalSyncJob } from './approval-sync.job';
+import { CalendarSyncJob } from './calendar-sync.job';
 import { UserSyncJob } from './user-sync.job';
 
 @Module({
-  imports: [ApprovalModule],
-  providers: [ApprovalSyncJob, UserSyncJob],
+  imports: [ApprovalModule, CalendarModule],
+  providers: [ApprovalSyncJob, CalendarSyncJob, UserSyncJob],
 })
 export class JobsModule {}

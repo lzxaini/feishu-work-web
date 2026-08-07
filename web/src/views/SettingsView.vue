@@ -102,6 +102,24 @@
 
     <div class="surface-card section-card">
       <div class="card-head">
+        <div class="card-icon">📅</div>
+        <div>
+          <div class="card-title">日历配置</div>
+          <div class="card-desc">配置节假日 JSON 链接，系统自动同步法定节假日与调休上班日（周六日自动判定，无需配置）</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <t-input v-model="calendarJsonUrl" placeholder="https://unpkg.com/holiday-calendar/data/CN/{year}.json" clearable style="width: 460px" />
+        <t-button theme="primary" shape="round" :loading="syncingCalendar" @click="saveCalendar">保存并同步</t-button>
+      </div>
+      <div v-if="calendarSyncText" class="config-help">
+        <span class="tip">{{ calendarSyncText }}</span>
+      </div>
+      <div class="config-help">支持 {year} 占位符自动同步今年与明年；保存后立即同步一次，之后每周自动更新。</div>
+    </div>
+
+    <div class="surface-card section-card">
+      <div class="card-head">
         <div class="card-icon">⚙️</div>
         <div>
           <div class="card-title">报工配置</div>
@@ -137,6 +155,7 @@ import {
   setUserHolidayEnabled,
 } from '../api/admin';
 import { getUsers } from '../api/project';
+import { syncCalendar } from '../api/calendar';
 
 const router = useRouter();
 const syncing = ref(false);
@@ -148,6 +167,9 @@ const newAdminOpenId = ref('');
 const hoursLimit = ref(8);
 const holidayEnabled = ref(false);
 const lastSyncText = ref('');
+const calendarJsonUrl = ref('');
+const syncingCalendar = ref(false);
+const calendarSyncText = ref('');
 
 // 用户列表（节假日报工权限）
 const userRows = ref<any[]>([]);
@@ -266,6 +288,25 @@ async function loadConfig() {
   const cfg = await getConfig();
   if (cfg.working_hours_limit) hoursLimit.value = Number(cfg.working_hours_limit);
   holidayEnabled.value = cfg.holiday_report_enabled === '1';
+  if (cfg.calendar_json_url) calendarJsonUrl.value = cfg.calendar_json_url;
+}
+
+async function saveCalendar() {
+  const url = calendarJsonUrl.value.trim();
+  if (!url) return MessagePlugin.warning('请输入节假日 JSON 链接');
+  syncingCalendar.value = true;
+  try {
+    await setConfig('calendar_json_url', url);
+    const res = await syncCalendar();
+    if (res.skipped) {
+      MessagePlugin.warning('未获取到节假日数据，请检查链接');
+    } else {
+      calendarSyncText.value = `最近同步：${new Date().toLocaleString('zh-CN')}，共 ${res.total} 条（法定 ${res.holiday} / 调休 ${res.adjustWorkday}）${res.failedUrls ? `，${res.failedUrls} 个链接拉取失败` : ''}`;
+      MessagePlugin.success(`同步完成，共 ${res.total} 条节假日`);
+    }
+  } finally {
+    syncingCalendar.value = false;
+  }
 }
 
 async function saveConfig() {
@@ -431,6 +472,12 @@ onMounted(() => {
 .table-wrap {
   margin-top: 6px;
   overflow-x: auto;
+}
+
+.config-help {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #86868b;
 }
 
 .pager {

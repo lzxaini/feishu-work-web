@@ -30,6 +30,14 @@ export class CalendarController {
     return this.calendarService.listRules();
   }
 
+  /** 从配置的 JSON 链接同步节假日（管理员；body.url 可选覆盖） */
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Post('sync')
+  sync(@Body() body: { url?: string }) {
+    return this.calendarService.syncFromConfig(body?.url);
+  }
+
   /** 新增例外（管理员） */
   @UseGuards(RolesGuard)
   @Roles('admin')

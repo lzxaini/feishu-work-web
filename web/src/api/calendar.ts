@@ -13,3 +13,4 @@ export const getCalendarRules = () => request.get<any, any>('/calendar/rules');
 export const createCalendarRule = (data: { calDate: string; dayType: number; name?: string }) =>
   request.post<any, any>('/calendar/rules', data);
 export const deleteCalendarRule = (id: number) => request.delete<any, any>(`/calendar/rules/${id}`);
+export const syncCalendar = () => request.post<any, any>('/calendar/sync');
