@@ -29,18 +29,12 @@ export class ApprovalService {
     private projectService: ProjectService,
   ) {}
 
-  /** 系统内审批：当前用户负责项目的待审批报工（管理员可看全部） */
+  /** 系统内审批：当前用户为指定审批人的待审批报工（管理员可看全部） */
   async listPending(user: JwtUser) {
-    let projectIds: number[] = [];
-    if (user.isAdmin) {
-      const projects = await this.prisma.project.findMany({ where: { deleted: 0 }, select: { id: true } });
-      projectIds = projects.map((p) => p.id);
-    } else {
-      const members = await this.prisma.projectMember.findMany({ where: { openId: user.openId, role: 1 } });
-      projectIds = members.map((m) => m.projectId);
-    }
+    const where: any = { status: REPORT_STATUS.PENDING, deleted: 0 };
+    if (!user.isAdmin) where.approverOpenId = user.openId;
     const items = await this.prisma.workReport.findMany({
-      where: { status: REPORT_STATUS.PENDING, projectId: { in: projectIds }, deleted: 0 },
+      where,
       include: { project: true },
       orderBy: { reportDate: 'desc' },
       take: 200,
@@ -73,8 +67,14 @@ export class ApprovalService {
   private async requirePending(id: number, user: JwtUser) {
     const report = await this.prisma.workReport.findFirst({ where: { id, deleted: 0, status: REPORT_STATUS.PENDING } });
     if (!report) throw new NotFoundException('待审批报工不存在或已处理');
-    const isOwner = await this.projectService.isOwner(report.projectId, user.openId);
-    if (!user.isAdmin && !isOwner) throw new ForbiddenException('仅项目负责人或管理员可审批');
+    if (!user.isAdmin && report.approverOpenId !== user.openId) {
+      // 兼容历史数据：未指定审批人的旧报工仍可由项目负责人审批
+      if (!report.approverOpenId) {
+        const isOwner = await this.projectService.isOwner(report.projectId, user.openId);
+        if (isOwner) return report;
+      }
+      throw new ForbiddenException('仅指定审批人或管理员可审批');
+    }
     return report;
   }
 

@@ -17,7 +17,7 @@
         <div>
           <p class="overview-kicker">APPROVAL CENTER</p>
           <h1 class="page-title">审批管理</h1>
-          <p class="overview-sub">审批你名下项目的待审批报工，通过后计入工时</p>
+          <p class="overview-sub">审批指派给你的待审批报工，通过后计入工时</p>
         </div>
         <div class="overview-actions">
           <t-button variant="text" theme="default" class="back-btn" @click="router.push('/')">← 返回首页</t-button>

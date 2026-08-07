@@ -152,6 +152,21 @@ export class ReportService {
     // 需求5/6：加班>0 或 节假日 → 需审批
     const needApproval = isHoliday || overtime > 0;
 
+    // 需要审批时：指定审批人（报工人手动选择；未指定则兜底取项目负责人）
+    let approverOpenId: string | null = null;
+    if (needApproval) {
+      approverOpenId = dto.approverOpenId || null;
+      if (!approverOpenId) {
+        const owners = await this.projectService.getOwnerOpenIds(project.id);
+        approverOpenId = owners[0] || null;
+      }
+      if (!approverOpenId) {
+        throw new BadRequestException('该报工需审批，请选择指定审批人');
+      }
+      const approver = await this.prisma.feishuUserCache.findUnique({ where: { openId: approverOpenId } });
+      if (!approver) throw new BadRequestException('指定的审批人不存在，请重新选择');
+    }
+
     const report = await this.prisma.workReport.create({
       data: {
         projectId: dto.projectId,
@@ -163,6 +178,7 @@ export class ReportService {
         remark: dto.remark,
         needApproval: needApproval ? 1 : 0,
         status: needApproval ? REPORT_STATUS.PENDING : REPORT_STATUS.APPROVED,
+        approverOpenId,
         userOpenId: user.openId,
         userName: user.name || null,
         createdBy: user.openId,
@@ -170,10 +186,24 @@ export class ReportService {
     });
 
     if (needApproval) {
-      // 系统内审批：需审批的报工保持「审批中」状态，由项目负责人在系统内审批（不再走飞书审批）
+      // 系统内审批：需审批的报工保持「审批中」状态，由指定审批人在系统内审批（不再走飞书审批）
       // 如需恢复飞书审批，可在此调用 await this.submitApproval(report);
+      await this.notifyApprover(report);
     }
     return this.fmt(report);
+  }
+
+  /** 通知指定审批人（失败不影响主流程） */
+  private async notifyApprover(report: any) {
+    if (!report.approverOpenId) return;
+    try {
+      const project = await this.prisma.project.findUnique({ where: { id: report.projectId } });
+      const date = new Date(report.reportDate).toISOString().slice(0, 10);
+      const msg = `您收到一条待审批报工：${project?.name || ''} ${date}，普通${Number(report.normalHours)}h / 加班${Number(report.overtimeHours)}h，请及时处理`;
+      await this.feishuMessage.sendText(report.approverOpenId, msg);
+    } catch (e: any) {
+      this.logger.warn(`通知审批人失败: ${e?.message}`);
+    }
   }
 
   /** 走飞书审批：创建实例 + 记录 + 卡片通知审批人 */

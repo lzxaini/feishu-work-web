@@ -38,4 +38,10 @@ export class CreateReportDto {
   @IsString()
   @MaxLength(500)
   remark?: string;
+
+  /** 指定审批人 openId（节假日/加班等需审批的报工必填，由报工人手动选择） */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  approverOpenId?: string;
 }
