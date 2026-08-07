@@ -12,7 +12,7 @@
     <header class="app-header">
       <button class="brand" @click="router.push('/')">
         <img class="logo" src="../assets/logo.png" alt="">
-        <span>百士研发项目统计系统</span>
+        <span>百士研发系统</span>
       </button>
       <span class="spacer" />
       <span class="user-name">{{ auth.user?.name || '' }}</span>
