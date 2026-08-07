@@ -1,9 +1,9 @@
 /*
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:40:52
- * @LastEditors: lzx 1245634367@qq.com
- * @LastEditTime: 2026-08-03 22:40:52
- * @FilePath: \feishu-work\server\src\modules\approval\approval.service.ts
+ * @LastEditors: 17630921248 1245634367@qq.com
+ * @LastEditTime: 2026-08-07 08:45:23
+ * @FilePath: \feishu-work-web\server\src\modules\approval\approval.service.ts
  * @Description: Fuck Bug
  * 微信：lizx2066
  */
@@ -87,22 +87,18 @@ export class ApprovalService {
     };
   }
 
-  /** 审批通知：您xxxx年xx月xx日xx项目提交的加班x小时的报工审批已通过/驳回 */
+  /** 审批通知：您于xxxx年xx月xx日，在<xx项目>中提交的报工审批，已通过/已驳回，驳回原因：（xx） */
   private async notifyApproval(report: any, approved: boolean, reason?: string) {
     try {
       const project = await this.prisma.project.findUnique({ where: { id: report.projectId } });
       const name = project?.name || '';
       const date = this.formatDate(report.reportDate);
-      // 优先显示加班时长；无加班（节假日普通报工）显示普通时长
-      const hours = Number(report.overtimeHours) > 0
-        ? `加班${Number(report.overtimeHours)}小时`
-        : `普通${Number(report.normalHours)}小时`;
-      const prefix = `您${date}${name}项目提交的${hours}的报工`;
+      const prefix = `您于${date}，在<${name}>项目中提交的报工审批`;
       const msg = approved
-        ? `${prefix}审批已通过`
+        ? `${prefix}，已通过`
         : reason
-          ? `${prefix}审批已驳回（${reason}）`
-          : `${prefix}审批已驳回`;
+          ? `${prefix}，已驳回，驳回原因：（${reason}）`
+          : `${prefix}，已驳回`;
       await this.feishuMessage.sendText(report.userOpenId, msg);
     } catch (e: any) {
       // 消息发送失败（如飞书未开通消息权限）不影响审批结果，仅记录

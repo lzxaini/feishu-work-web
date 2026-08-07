@@ -199,7 +199,7 @@ export class ReportService {
     try {
       const project = await this.prisma.project.findUnique({ where: { id: report.projectId } });
       const date = new Date(report.reportDate).toISOString().slice(0, 10);
-      const msg = `您收到一条待审批报工：${project?.name || ''} ${date}，普通${Number(report.normalHours)}h / 加班${Number(report.overtimeHours)}h，请及时处理`;
+      const msg = `您收到一条待审批报工：${project?.name || ''} ${date}，普通${Number(report.normalHours)}h / 加班${Number(report.overtimeHours)}h，提交人：${report.userName || report.userOpenId}，请及时处理`;
       await this.feishuMessage.sendText(report.approverOpenId, msg);
     } catch (e: any) {
       this.logger.warn(`通知审批人失败: ${e?.message}`);
