@@ -8,6 +8,7 @@
  * 微信：lizx2066
  */
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FeishuApprovalService } from '../../feishu/feishu-approval.service';
 import { FeishuMessageService } from '../../feishu/feishu-message.service';
@@ -27,6 +28,7 @@ export class ApprovalService {
     private feishuApproval: FeishuApprovalService,
     private feishuMessage: FeishuMessageService,
     private projectService: ProjectService,
+    private config: ConfigService,
   ) {}
 
   /** 系统内审批：当前用户为指定审批人的待审批报工（管理员可看全部） */
@@ -49,7 +51,7 @@ export class ApprovalService {
       where: { id },
       data: { status: REPORT_STATUS.APPROVED, approvedAt: new Date() },
     });
-    await this.notifyApproval(report, true);
+    await this.notifyApproval(report, true, undefined, user.name);
     return this.fmt(updated);
   }
 
@@ -60,7 +62,7 @@ export class ApprovalService {
       where: { id },
       data: { status: REPORT_STATUS.REJECTED, rejectReason: reason || '' },
     });
-    await this.notifyApproval(report, false, reason);
+    await this.notifyApproval(report, false, reason, user.name);
     return this.fmt(updated);
   }
 
@@ -87,19 +89,33 @@ export class ApprovalService {
     };
   }
 
-  /** 审批通知：您于xxxx年xx月xx日，在<xx项目>中提交的报工审批，已通过/已驳回，驳回原因：（xx） */
-  private async notifyApproval(report: any, approved: boolean, reason?: string) {
+  /** 审批通知（卡片 + 跳转）：结构化展示审批结果 */
+  private async notifyApproval(report: any, approved: boolean, reason?: string, approverName?: string) {
     try {
       const project = await this.prisma.project.findUnique({ where: { id: report.projectId } });
       const name = project?.name || '';
       const date = this.formatDate(report.reportDate);
-      const prefix = `您于${date}，在<${name}>项目中提交的报工审批`;
-      const msg = approved
-        ? `${prefix}，已通过`
-        : reason
-          ? `${prefix}，已驳回，驳回原因：（${reason}）`
-          : `${prefix}，已驳回`;
-      await this.feishuMessage.sendText(report.userOpenId, msg);
+      const normal = Number(report.normalHours);
+      const overtime = Number(report.overtimeHours);
+      const lines = [
+        `**项目**：${name}`,
+        `**报工日期**：${date}`,
+        `**报工时长**：普通 ${normal}h ｜ 加班 ${overtime}h ｜ 合计 ${Number(report.totalHours)}h`,
+        `**报工类型**：${report.isHoliday ? '节假日' : '工作日'}`,
+        `**提交人**：${report.userName || report.userOpenId}`,
+        `**审批结果**：${approved ? '✅ 已通过' : '❌ 已驳回'}`,
+      ];
+      if (!approved) lines.push(`**驳回原因**：${reason || '无'}`);
+      if (approverName) lines.push(`**审批人**：${approverName}`);
+
+      const webUrl = this.config.get('APP_WEB_URL') || '';
+      await this.feishuMessage.sendActionCard(report.userOpenId, {
+        title: approved ? '✅ 报工审批通过' : '❌ 报工审批驳回',
+        template: approved ? 'green' : 'red',
+        lines,
+        buttonText: '查看报工',
+        url: `${webUrl}/reports`,
+      });
     } catch (e: any) {
       // 消息发送失败（如飞书未开通消息权限）不影响审批结果，仅记录
       this.logger.warn(`通知报工人失败: ${e?.message}`);

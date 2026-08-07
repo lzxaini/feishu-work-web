@@ -35,4 +35,29 @@ export class FeishuMessageService {
       content: JSON.stringify(card),
     });
   }
+
+  /** 发送带跳转按钮的卡片消息（点击按钮打开系统页面） */
+  async sendActionCard(
+    openId: string,
+    opts: {
+      title: string;
+      template?: 'blue' | 'green' | 'orange' | 'red' | 'grey';
+      lines: string[]; // markdown 内容行
+      buttonText: string;
+      url: string; // 为空则不渲染跳转按钮
+    },
+  ) {
+    const elements: any[] = [{ tag: 'div', text: { tag: 'lark_md', content: opts.lines.join('\n') } }];
+    if (opts.url) {
+      elements.push({
+        tag: 'action',
+        actions: [{ tag: 'button', text: { tag: 'plain_text', content: opts.buttonText }, type: 'primary', url: opts.url }],
+      });
+    }
+    return this.sendCard(openId, {
+      config: { wide_screen_mode: true },
+      header: { title: { tag: 'plain_text', content: opts.title }, template: opts.template || 'blue' },
+      elements,
+    });
+  }
 }

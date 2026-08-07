@@ -193,14 +193,25 @@ export class ReportService {
     return this.fmt(report);
   }
 
-  /** 通知指定审批人（失败不影响主流程） */
+  /** 通知指定审批人（卡片 + 跳转，失败不影响主流程） */
   private async notifyApprover(report: any) {
     if (!report.approverOpenId) return;
     try {
       const project = await this.prisma.project.findUnique({ where: { id: report.projectId } });
       const date = new Date(report.reportDate).toISOString().slice(0, 10);
-      const msg = `您收到一条待审批报工：${project?.name || ''} ${date}，普通${Number(report.normalHours)}h / 加班${Number(report.overtimeHours)}h，提交人：${report.userName || report.userOpenId}，请及时处理`;
-      await this.feishuMessage.sendText(report.approverOpenId, msg);
+      const webUrl = this.config.get('APP_WEB_URL') || '';
+      await this.feishuMessage.sendActionCard(report.approverOpenId, {
+        title: '📋 收到一条报工待审批',
+        template: 'orange',
+        lines: [
+          `**${project?.name || ''}**`,
+          `报工日期：${date}`,
+          `普通时长：${Number(report.normalHours)}h｜加班时长：${Number(report.overtimeHours)}h`,
+          `提交人：${report.userName || report.userOpenId}`,
+        ],
+        buttonText: '去审批',
+        url: `${webUrl}/approvals`,
+      });
     } catch (e: any) {
       this.logger.warn(`通知审批人失败: ${e?.message}`);
     }
