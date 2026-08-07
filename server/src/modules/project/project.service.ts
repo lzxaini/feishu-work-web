@@ -29,19 +29,23 @@ export class ProjectService {
     if (query.status) where.status = Number(query.status);
     if (query.priority) where.priority = Number(query.priority);
 
-    // 我的项目：当前用户报工过且进行中，按最近报工时间倒序
+    // 我的项目：当前用户报工过且进行中，按最近报工（提交时间）倒序
     if (query.my === '1' && user?.openId) {
       const reports = await this.prisma.workReport.findMany({
         where: { userOpenId: user.openId, deleted: 0 },
-        select: { projectId: true, reportDate: true },
-        orderBy: { reportDate: 'desc' },
+        select: { projectId: true, reportDate: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
       });
-      // 每个项目保留最近一次报工时间
-      const lastReportAt = new Map<number, Date>();
+      // 每个项目保留最近一次提交时间（排序用）与最近一次报工日期（展示用）
+      const lastCreatedAt = new Map<number, Date>();
+      const lastReportDate = new Map<number, Date>();
       for (const r of reports) {
-        if (!lastReportAt.has(r.projectId)) lastReportAt.set(r.projectId, r.reportDate);
+        if (!lastCreatedAt.has(r.projectId)) {
+          lastCreatedAt.set(r.projectId, r.createdAt);
+          lastReportDate.set(r.projectId, r.reportDate);
+        }
       }
-      const ids = [...lastReportAt.keys()];
+      const ids = [...lastCreatedAt.keys()];
       if (!ids.length) return { total: 0, page, pageSize, items: [] };
       where.id = { in: ids };
       where.status = 1; // 仅进行中
@@ -50,13 +54,13 @@ export class ProjectService {
         where,
         include: { members: { where: { role: 1 } } },
       });
-      // 按最近报工时间倒序
-      projects.sort((a, b) => (lastReportAt.get(b.id)?.getTime() || 0) - (lastReportAt.get(a.id)?.getTime() || 0));
+      // 按最近一次提交时间倒序（同一天也能区分先后）
+      projects.sort((a, b) => (lastCreatedAt.get(b.id)?.getTime() || 0) - (lastCreatedAt.get(a.id)?.getTime() || 0));
       const total = projects.length;
       // 附带最近一次报工日期（上次填报）
       const items = projects.slice((page - 1) * pageSize, page * pageSize).map((p) => ({
         ...p,
-        lastReportAt: lastReportAt.get(p.id) || null,
+        lastReportAt: lastReportDate.get(p.id) || null,
       }));
       return { total, page, pageSize, items };
     }
