@@ -20,6 +20,7 @@ import { ApprovalModule } from './modules/approval/approval.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { NotifyModule } from './modules/notify/notify.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { StatsModule } from './modules/stats/stats.module';
 import { JobsModule } from './jobs/jobs.module';
 
 @Module({
@@ -36,6 +37,7 @@ import { JobsModule } from './jobs/jobs.module';
     CalendarModule,
     NotifyModule,
     AdminModule,
+    StatsModule,
     JobsModule,
   ],
 })

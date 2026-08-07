@@ -26,6 +26,7 @@ const router = createRouter({
         { path: 'reports', name: 'reports', component: () => import('../views/ReportList.vue') },
         { path: 'reports/new', name: 'report-new', component: () => import('../views/ReportForm.vue') },
         { path: 'approvals', name: 'approvals', component: () => import('../views/ApprovalView.vue') },
+        { path: 'stats', name: 'stats', component: () => import('../views/StatsView.vue') },
         { path: 'calendar', name: 'calendar', component: () => import('../views/CalendarView.vue') },
         { path: 'settings', name: 'settings', component: () => import('../views/SettingsView.vue') },
       ],
