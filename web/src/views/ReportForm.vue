@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:45:00
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 10:33:20
+ * @LastEditTime: 2026-08-07 15:48:26
  * @FilePath: \feishu-work-web\web\src\views\ReportForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -72,16 +72,7 @@
         </div>
 
         <t-form-item v-if="needApproval" label="指定审批人" required-mark class="span-full">
-          <t-select
-            v-model="form.approverOpenId"
-            filterable
-            clearable
-            :options="approverOptions"
-            :loading="approverSearching"
-            @search="searchApprovers"
-            placeholder="默认项目负责人，可改为其他审批人"
-            style="width: 100%"
-          />
+          <UserSelect v-model="form.approverOpenId" placeholder="默认项目负责人，可改为其他审批人" />
         </t-form-item>
 
         <t-form-item v-if="holiday !== null" label="提示" class="span-full">
@@ -127,7 +118,8 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { MessagePlugin, Tag } from 'tdesign-vue-next';
-import { getProjects, getUsers } from '../api/project';
+import UserSelect from '../components/UserSelect.vue';
+import { getProjects } from '../api/project';
 import { createReport, isHoliday, getReportQuota } from '../api/report';
 
 const router = useRouter();
@@ -135,8 +127,6 @@ const saving = ref(false);
 const projects = ref<any[]>([]);
 const holiday = ref<boolean | null>(null);
 const quota = ref<any>({ limit: 8, used: 0, remaining: 8, userHolidayEnabled: true });
-const approverOptions = ref<{ label: string; value: string }[]>([]);
-const approverSearching = ref(false);
 
 // 项目选择弹窗
 const projectPickerVisible = ref(false);
@@ -236,16 +226,6 @@ watch(needApproval, (v) => {
   if (v && !form.value.approverOpenId) form.value.approverOpenId = defaultApproverOpenId();
 });
 
-async function searchApprovers(keyword: string) {
-  approverSearching.value = true;
-  try {
-    const res = await getUsers({ keyword, pageSize: 20 });
-    approverOptions.value = res.items.map((u: any) => ({ label: u.name, value: u.openId }));
-  } finally {
-    approverSearching.value = false;
-  }
-}
-
 async function loadQuota() {
   if (!form.value.reportDate) {
     quota.value = { limit: 8, used: 0, remaining: 8, userHolidayEnabled: true };
@@ -289,7 +269,6 @@ onMounted(async () => {
   projects.value = res.items.filter((p: any) => p.status === 1);
   // 默认今天：加载当天节假日提示与普通时长额度
   if (form.value.reportDate) await checkHoliday(form.value.reportDate);
-  searchApprovers('');
 });
 </script>
 

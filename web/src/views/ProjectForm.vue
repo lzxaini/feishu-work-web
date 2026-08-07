@@ -73,16 +73,7 @@
       </t-form-item> -->
 
       <t-form-item label="审批人">
-        <t-select
-          v-model="form.ownerOpenId"
-          clearable
-          filterable
-          :options="userOptions"
-          :loading="searching"
-          @search="searchUsers"
-          placeholder="搜索并选择飞书用户"
-          style="width: 100%"
-        />
+        <UserSelect ref="userSelectRef" v-model="form.ownerOpenId" placeholder="搜索并选择飞书用户" :show-department="true" />
       </t-form-item>
 
       <div class="form-section span-full">补充说明</div>
@@ -107,14 +98,15 @@
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { getProject, createProject, updateProject, getUsers } from '../api/project';
+import UserSelect from '../components/UserSelect.vue';
+import { getProject, createProject, updateProject } from '../api/project';
 
 const route = useRoute();
 const router = useRouter();
 const editId = route.params.id ? Number(route.params.id) : null;
 
 const saving = ref(false);
-const searching = ref(false);
+const userSelectRef = ref();
 const form = ref<any>({
   name: '',
   code: '',
@@ -132,7 +124,6 @@ const form = ref<any>({
   patentApplied: 0,
   rdCostAmortization: undefined,
 });
-const userOptions = ref<{ label: string; value: string }[]>([]);
 
 const statusOptions = [
   { label: '进行中', value: 1 },
@@ -146,19 +137,6 @@ const priorityOptions = [
   { label: '优先', value: 2 },
   { label: '普通', value: 3 },
 ];
-
-async function searchUsers(keyword: string) {
-  searching.value = true;
-  try {
-    const res = await getUsers({ keyword, pageSize: 20 });
-    userOptions.value = res.items.map((u: any) => ({
-      label: `${u.name}${u.departmentName ? '（' + u.departmentName + '）' : ''}`,
-      value: u.openId,
-    }));
-  } finally {
-    searching.value = false;
-  }
-}
 
 async function save() {
   if (!form.value.name) {
@@ -198,7 +176,6 @@ async function save() {
 }
 
 onMounted(async () => {
-  await searchUsers('');
   if (editId) {
     const p = await getProject(editId);
     form.value = {
@@ -218,13 +195,9 @@ onMounted(async () => {
       patentApplied: p.patentApplied ?? 0,
       rdCostAmortization: p.rdCostAmortization ?? undefined,
     };
-    // 合并当前负责人到候选列表（不要覆盖，否则编辑时无法选择其他负责人）
-    const memberOptions: { label: string; value: string }[] = (p.members || []).map((m: any) => ({
-      label: m.userName || m.openId,
-      value: m.openId,
-    }));
-    const existing = new Set(userOptions.value.map((o) => o.value));
-    userOptions.value = [...userOptions.value, ...memberOptions.filter((o) => !existing.has(o.value))];
+    // 回显当前负责人到下拉候选（可能不在第 1 页）
+    const owner = (p.members || []).find((m: any) => m.role === 1);
+    if (owner) userSelectRef.value?.addOption(owner.userName || owner.openId, owner.openId);
   }
 });
 </script>

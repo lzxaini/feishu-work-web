@@ -64,15 +64,7 @@
         </div>
       </div>
       <div class="toolbar">
-        <t-select
-          v-model="newAdminOpenId"
-          filterable
-          :options="userOptions"
-          :loading="searching"
-          @search="searchUsers"
-          placeholder="搜索并选择用户"
-          style="width: 260px"
-        />
+        <UserSelect v-model="newAdminOpenId" placeholder="搜索并选择用户" width="260px" />
         <t-button theme="primary" shape="round" @click="addAdmin">添加管理员</t-button>
       </div>
       <div class="table-wrap">
@@ -156,13 +148,12 @@ import {
 } from '../api/admin';
 import { getUsers } from '../api/project';
 import { syncCalendar } from '../api/calendar';
+import UserSelect from '../components/UserSelect.vue';
 
 const router = useRouter();
 const syncing = ref(false);
-const searching = ref(false);
 const savingConfig = ref(false);
 const admins = ref<any[]>([]);
-const userOptions = ref<{ label: string; value: string }[]>([]);
 const newAdminOpenId = ref('');
 const hoursLimit = ref(8);
 const holidayEnabled = ref(false);
@@ -230,16 +221,6 @@ async function toggleHoliday(row: any, enabled: boolean) {
     MessagePlugin.error('设置失败，请重试');
   } finally {
     togglingIds.value.delete(row.openId);
-  }
-}
-
-async function searchUsers(keyword: string) {
-  searching.value = true;
-  try {
-    const res = await getUsers({ keyword, pageSize: 20 });
-    userOptions.value = res.items.map((u: any) => ({ label: u.name, value: u.openId }));
-  } finally {
-    searching.value = false;
   }
 }
 
@@ -321,7 +302,6 @@ async function saveConfig() {
 }
 
 onMounted(() => {
-  searchUsers('');
   loadAdmins();
   loadConfig();
   loadUserList();
