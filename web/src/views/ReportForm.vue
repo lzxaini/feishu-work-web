@@ -2,7 +2,7 @@
  * @Author: lzx 1245634367@qq.com
  * @Date: 2026-08-03 22:45:00
  * @LastEditors: 17630921248 1245634367@qq.com
- * @LastEditTime: 2026-08-07 08:32:29
+ * @LastEditTime: 2026-08-07 10:26:23
  * @FilePath: \feishu-work-web\web\src\views\ReportForm.vue
  * @Description: Fuck Bug
  * 微信：lizx2066
@@ -21,9 +21,17 @@
     <div class="surface-card form-card">
       <t-form :data="form" label-align="top" class="form-grid">
         <t-form-item label="项目" required-mark class="span-full">
-          <t-select v-model="form.projectId" filterable placeholder="选择项目" style="width: 100%" @change="onProjectChange">
-            <t-option v-for="p in projects" :key="p.id" :value="p.id" :label="p.name" />
-          </t-select>
+          <t-input
+            readonly
+            :model-value="selectedProjectName"
+            placeholder="点击选择项目"
+            style="width: 100%; cursor: pointer"
+            @click="openProjectPicker"
+          >
+            <template #suffixIcon>
+              <span style="color: #c2c2c7; font-size: 12px">▾</span>
+            </template>
+          </t-input>
         </t-form-item>
         <t-form-item label="报工日期" required-mark class="span-full">
           <t-date-picker
@@ -92,13 +100,32 @@
         </div>
       </t-form>
     </div>
+
+    <t-dialog v-model:visible="projectPickerVisible" header="选择项目" :footer="false" width="60%">
+      <div class="picker-toolbar">
+        <t-input v-model="projectKeyword" placeholder="搜索项目名称/合同编号" clearable style="width: 100%" @enter="searchProjectRows" @clear="searchProjectRows" />
+      </div>
+      <t-table
+        :data="projectRows"
+        :columns="projectColumns"
+        row-key="id"
+        hover
+        :loading="projectLoading"
+        table-layout="fixed"
+        @row-click="pickProject"
+      />
+      <div class="picker-pager">
+        <span class="picker-tip">共 {{ projectTotal }} 个项目，点击行选择</span>
+        <t-pagination :total="projectTotal" :page-size="projectPageSize" :current="projectPage" @change="onProjectPageChange" />
+      </div>
+    </t-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { MessagePlugin, Tag } from 'tdesign-vue-next';
 import { getProjects, getUsers } from '../api/project';
 import { createReport, isHoliday, getReportQuota } from '../api/report';
 
@@ -109,6 +136,15 @@ const holiday = ref<boolean | null>(null);
 const quota = ref<any>({ limit: 8, used: 0, remaining: 8 });
 const approverOptions = ref<{ label: string; value: string }[]>([]);
 const approverSearching = ref(false);
+
+// 项目选择弹窗
+const projectPickerVisible = ref(false);
+const projectKeyword = ref('');
+const projectRows = ref<any[]>([]);
+const projectLoading = ref(false);
+const projectTotal = ref(0);
+const projectPage = ref(1);
+const projectPageSize = 10;
 
 function todayStr() {
   const d = new Date();
@@ -127,14 +163,65 @@ const form = ref<any>({
 // 是否需审批：节假日 或 加班>0
 const needApproval = computed(() => holiday.value === true || form.value.overtimeHours > 0);
 
+const selectedProjectName = computed(() => {
+  const p =
+    projects.value.find((x: any) => x.id === form.value.projectId) ||
+    projectRows.value.find((x: any) => x.id === form.value.projectId);
+  return p?.name || '';
+});
+
 function defaultApproverOpenId() {
-  const p = projects.value.find((x: any) => x.id === form.value.projectId);
+  const p =
+    projects.value.find((x: any) => x.id === form.value.projectId) ||
+    projectRows.value.find((x: any) => x.id === form.value.projectId);
   return p?.members?.[0]?.openId || '';
 }
 
 // 选择项目后默认审批人为项目负责人
 function onProjectChange() {
   form.value.approverOpenId = defaultApproverOpenId();
+}
+
+const projectColumns = [
+  { colKey: 'contractNo', title: '项目编号', minWidth: 200, cell: (h: any, { row }: any) => row?.contractNo || '-' },
+  { colKey: 'name', title: '项目名称', minWidth: 200, ellipsis: true },
+  { colKey: 'description', title: '项目描述', minWidth: 200, ellipsis: true },
+  { colKey: 'status', title: '状态', width: 80, cell: (h: any, { row }: any) => h(Tag, { theme: 'primary', variant: 'light' }, { default: () => '进行中' }) },
+];
+
+function openProjectPicker() {
+  projectKeyword.value = '';
+  projectPage.value = 1;
+  loadProjectRows();
+  projectPickerVisible.value = true;
+}
+
+async function loadProjectRows() {
+  projectLoading.value = true;
+  try {
+    const res = await getProjects({ keyword: projectKeyword.value, status: 1, page: projectPage.value, pageSize: projectPageSize });
+    projectRows.value = res.items;
+    projectTotal.value = res.total;
+  } finally {
+    projectLoading.value = false;
+  }
+}
+
+// 搜索：重置到第 1 页再加载
+function searchProjectRows() {
+  projectPage.value = 1;
+  loadProjectRows();
+}
+
+function onProjectPageChange(pageInfo: any) {
+  projectPage.value = pageInfo.current;
+  loadProjectRows();
+}
+
+function pickProject({ row }: any) {
+  form.value.projectId = row.id;
+  onProjectChange();
+  projectPickerVisible.value = false;
 }
 
 // 变为需审批时：未指定审批人则自动默认项目负责人
@@ -276,6 +363,25 @@ onMounted(async () => {
   margin-top: 6px;
   display: flex;
   gap: 12px;
+}
+
+.picker-toolbar {
+  margin-bottom: 12px;
+}
+
+.picker-pager {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.picker-tip {
+  color: #86868b;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 
 @media (max-width: 720px) {
